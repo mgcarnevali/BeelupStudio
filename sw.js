@@ -1,5 +1,5 @@
-const CACHE = 'beelup-studio-ghpages-v14-mp4-worker';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './studio.js', './icon.svg', './manifest.webmanifest'];
+const CACHE = 'beelup-studio-ghpages-v12';
+const ASSETS = ['./', './index.html', './style.css', './app.js', './studio.js', './remux.js', './icon.svg', './manifest.webmanifest'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))); self.clients.claim(); });
 self.addEventListener('fetch', event => {

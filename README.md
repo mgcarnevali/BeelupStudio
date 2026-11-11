@@ -1,14 +1,15 @@
-# Beelup Studio v0.8 — Reproductor único
+# Beelup Studio v0.9 — Reproductor personalizado
 
-- Reemplaza completamente el iframe del reproductor oficial por un reproductor HTML5/HLS propio.
-- Al seleccionar partido se carga automáticamente; sin botón Preparar video.
-- Un solo enlace externo: **Ver en Beelup**.
-- Editor de inicio/fin y descarga de fragmento o partido completo en MPEG-TS.
-- Los videos deben ser accesibles y estar autorizados para descarga.
+## Novedades
+- Controles propios: reproducir/pausar, saltos de 10 s, volumen, silencio, velocidad y pantalla completa.
+- Línea de tiempo de reproducción y un único selector visual de recorte con dos extremos IN/OUT.
+- Marcar IN/OUT desde el video y previsualizar el fragmento.
+- Descarga MPEG-TS conservada y exportación experimental MP4 (remultiplexado en navegador con mux.js, sin recodificar). El MP4 depende de que los segmentos originales sean compatibles; si falla, utilizar TS.
+- MP4 limitado a 150 MiB de entrada para evitar uso excesivo de memoria. Partido completo sigue disponible como TS, con advertencia de memoria.
+- Búsqueda multipaís y Cloudflare Worker sin cambios.
 
 ## Publicación
-1. Cloudflare Worker: pegar `worker.js` en el editor y desplegar.
-2. GitHub Pages: subir `index.html`, `app.js`, `studio.js`, `style.css`, `sw.js`, `icon.svg`, `manifest.webmanifest`. **No subir worker.js** a GitHub Pages.
-3. Probar en incógnito.
+Subir únicamente `index.html`, `style.css`, `studio.js`, `sw.js`, `app.js`, `icon.svg`, `manifest.webmanifest` a la raíz de GitHub Pages. **No es necesario modificar Cloudflare** ni publicar `worker.js`.
 
-**Limitación conocida:** el flujo de resolución HLS y la exportación no pudieron probarse en vivo. Si falla, el mensaje del Worker ahora distingue parámetros faltantes. Los videos completos pueden consumir demasiada memoria del navegador. No se promete MP4 ni recorte a fotograma exacto.
+## Límites
+No se verificó en vivo el MP4 en todos los navegadores ni se garantiza precisión de fotograma; el recorte sigue ajustado a los segmentos HLS. La exportación se realiza únicamente para grabaciones con acceso y autorización.

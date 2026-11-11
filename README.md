@@ -1,15 +1,12 @@
-# Beelup Studio v0.9 — Reproductor personalizado
+# Beelup Studio v1.0 — Reproductor responsive y exportación MP4
 
-## Novedades
-- Controles propios: reproducir/pausar, saltos de 10 s, volumen, silencio, velocidad y pantalla completa.
-- Línea de tiempo de reproducción y un único selector visual de recorte con dos extremos IN/OUT.
-- Marcar IN/OUT desde el video y previsualizar el fragmento.
-- Descarga MPEG-TS conservada y exportación experimental MP4 (remultiplexado en navegador con mux.js, sin recodificar). El MP4 depende de que los segmentos originales sean compatibles; si falla, utilizar TS.
-- MP4 limitado a 150 MiB de entrada para evitar uso excesivo de memoria. Partido completo sigue disponible como TS, con advertencia de memoria.
-- Búsqueda multipaís y Cloudflare Worker sin cambios.
+Reemplazar en GitHub Pages: `index.html`, `style.css`, `studio.js`, `sw.js`.
 
-## Publicación
-Subir únicamente `index.html`, `style.css`, `studio.js`, `sw.js`, `app.js`, `icon.svg`, `manifest.webmanifest` a la raíz de GitHub Pages. **No es necesario modificar Cloudflare** ni publicar `worker.js`.
+- Controles propios adaptados a móviles; reproducción y búsqueda con una sola barra.
+- Inicio/fin editables y botones para marcar desde la posición actual.
+- Nombre de archivo editable, sugerido a partir del partido.
+- TS: mismo procedimiento de descarga comprobado en v0.8.
+- MP4: FFmpeg WebAssembly convierte TS a MP4 con `-c copy -movflags +faststart`; necesita descargar el motor al primer uso, consume memoria, limita tamaño (90 MiB móvil / 220 MiB escritorio). No se garantiza compatibilidad de todos los navegadores/códecs. La selección sigue alineada a segmentos HLS.
+- Cloudflare Worker: **sin cambios**.
 
-## Límites
-No se verificó en vivo el MP4 en todos los navegadores ni se garantiza precisión de fotograma; el recorte sigue ajustado a los segmentos HLS. La exportación se realiza únicamente para grabaciones con acceso y autorización.
+Probar MP4 en Chrome y VLC y probar descarga en Android/iOS antes de considerarlo validado. La conversión de partidos completos no está habilitada en MP4.

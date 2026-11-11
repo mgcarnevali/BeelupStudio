@@ -87,23 +87,10 @@ $('find').addEventListener('click', () => {
   const url = `https://beelup.com/${countryCode()}/pedir-partido?${params}`;
   $('matchname').textContent = `${$('club').selectedOptions[0].text} · ${$('court').selectedOptions[0].text} · ${date} ${time}`;
   $('watch').href = url;
-  closePlayer();
   $('result').classList.remove('hidden');
   window.dispatchEvent(new CustomEvent('beelup:selection', {detail:{club,court,date,time,code:countryCode()}}));
   $('result').scrollIntoView({ behavior: 'smooth' });
-  status('Selección lista. Abrí el partido en el sitio oficial.');
+  status('Partido seleccionado. Cargando el reproductor de Beelup Studio…');
 });
-function closePlayer() {
-  $('beelup-frame').removeAttribute('src');
-  $('player-wrap').classList.add('hidden');
-}
-$('embed').addEventListener('click', () => {
-  const officialUrl = $('watch').href;
-  if (!officialUrl || !officialUrl.startsWith('https://beelup.com/')) return;
-  $('beelup-frame').src = officialUrl;
-  $('player-wrap').classList.remove('hidden');
-  $('player-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-});
-$('close-player').addEventListener('click', closePlayer);
 loadCountry();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});

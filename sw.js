@@ -1,4 +1,4 @@
-const CACHE = 'beelup-studio-ghpages-v3';
+const CACHE = 'beelup-studio-ghpages-v4';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './icon.svg', './manifest.webmanifest'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))); self.clients.claim(); });

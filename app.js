@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const API = 'https://beelup.com/f.home.api.php';
+const API = 'https://beelup-studio-api.mgcarnevali.workers.dev/api/beelup';
 let clubs = [], requestId = 0;
 const currentCountry = () => $('country').value;
 const countryCode = () => $('country').selectedOptions[0].dataset.code;
@@ -19,15 +19,20 @@ function resetAfter(level) {
 async function load(action, club = '', court = '', date = '') {
   const params = new URLSearchParams({ accion: action, pais: currentCountry(), complejo: club, cancha: court, fecha: date, hora: '', invisibles: '' });
   const response = await fetch(`${API}?${params}`, { method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error(`Beelup respondió HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(`API intermedia respondió HTTP ${response.status}.`);
   const data = await response.json();
   if (!Array.isArray(data)) throw new Error('Beelup devolvió un formato inesperado.');
-  return data;
+  return data.map(item => ({
+    Nombre: item.nombre ?? item.Nombre ?? '',
+    Valor: item.valor ?? item.Valor ?? '',
+    Tipo: item.tipo ?? item.Tipo ?? null,
+    Atc: item.atc ?? false
+  }));
 }
 function failure(error) {
   $('connection').textContent = 'No disponible';
-  status('No se puede consultar Beelup directamente desde este navegador. Es posible que su servidor bloquee CORS. GitHub Pages no puede solucionar esa restricción; necesitaremos una API intermedia.');
-  console.warn('Conexión Beelup:', error);
+  status('No se pudo conectar con la API intermedia de Cloudflare. Revisá el estado del Worker y la consola del navegador.');
+  console.warn('Conexión Beelup Worker:', error);
 }
 function filterClubs() {
   const selected = $('club').value;

@@ -8,7 +8,7 @@ Subir **el contenido de esta carpeta** a la raíz de un repositorio GitHub. En S
 
 ## Alcance y limitaciones
 
-- Consulta `https://beelup.com/f.home.api.php` directamente desde el navegador para listar clubes, canchas, fechas y horarios.
+- Consulta `https://beelup-studio-api.mgcarnevali.workers.dev/api/beelup` a través del Worker para listar clubes, canchas, fechas y horarios.
 - **No se ha verificado que Beelup permita CORS**. Si lo bloquea, la aplicación muestra una advertencia y no puede buscar. GitHub Pages no puede actuar como backend/proxy. El prototipo .NET sigue funcionando por separado.
 - Abre la selección en el sitio oficial de Beelup, sin intentar resolver automáticamente el player ni saltar controles de acceso.
 - **No hay reproducción integrada ni descarga de MP4 en esta versión**. Son funcionalidades pendientes de resolver con permisos, CORS y/o backend.
@@ -22,3 +22,7 @@ Servir la carpeta por HTTP (por ejemplo `python -m http.server 8080`), no abrir 
 ## Multipaís
 
 Selector de 18 países presentes en el menú del sitio oficial Beelup (captura de referencia). La lista es estática porque no se ha confirmado un endpoint para descubrir países. Cada cambio de país vuelve a consultar clubes, y reinicia cancha, fecha y horario. El enlace al partido usa la ruta correspondiente al país. La conectividad desde GitHub Pages depende de CORS.
+
+
+## v0.4
+La búsqueda utiliza Cloudflare Worker. Requiere que el Worker esté desplegado y permita CORS desde https://mgcarnevali.github.io. El JSON de Beelup usa campos en minúsculas y se normaliza en la interfaz.

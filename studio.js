@@ -47,7 +47,7 @@ video.addEventListener('timeupdate',()=>{syncPlayer();if(previewing&&video.curre
 
 async function exportVideo(full,mp4=false){if(busy||!segments.length)return;const a=full?0:seconds($('clip-start').value),b=full?duration:seconds($('clip-end').value);if(!Number.isFinite(a)||!Number.isFinite(b)||a<0||b>duration+0.1||a>=b){progress('Inicio y fin inválidos.');return;}const chosen=segments.filter(s=>s.end>a&&s.start<b);if(!chosen.length)return;const approx=(chosen.at(-1).end-chosen[0].start);if(!full&&approx>600&&!confirm('El fragmento supera 10 minutos y puede consumir mucha memoria. ¿Continuar?'))return;if(full&&!confirm('Un partido completo puede superar la memoria del navegador y consumir muchos datos. ¿Continuar?'))return;
  busy=true;$('download-clip').disabled=$('download-full').disabled=$('download-mp4').disabled=true;$('export-progress').classList.remove('hidden');$('export-progress').value=0;
- try{const pieces=[];let bytes=0;for(let i=0;i<chosen.length;i++){const r=await api('/api/segment',{url:chosen[i].url});const piece=await r.blob();bytes+=piece.size;if(mp4&&bytes>(/Android|iPhone|iPad/i.test(navigator.userAgent)?90:220)*1048576)throw Error('El recorte es demasiado grande para convertirlo en este dispositivo. Usá TS o un recorte más corto.');pieces.push(piece);$('export-progress').value=Math.round((i+1)/chosen.length*100);progress(`Descargando segmentos ${i+1}/${chosen.length}…`)}let blob;if(mp4){progress('Empaquetando MP4 sin recodificar…');blob=await transmuxMp4(pieces)}else blob=new Blob(pieces,{type:'video/mp2t'});const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download=downloadName(full,a,b,mp4?'mp4':'ts');document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);progress(`Archivo ${mp4?'MP4':'TS'} generado (${(blob.size/1048576).toFixed(1)} MB). El recorte se ajusta a segmentos HLS.`)}catch(e){progress('Error en descarga: '+e.message)}finally{busy=false;$('download-clip').disabled=$('download-full').disabled=$('download-mp4').disabled=false}}
+ try{const pieces=[];let bytes=0;for(let i=0;i<chosen.length;i++){const r=await api('/api/segment',{url:chosen[i].url});const piece=await r.blob();bytes+=piece.size;if(mp4&&bytes>(/Android|iPhone|iPad/i.test(navigator.userAgent)?90:220)*1048576)throw Error('El recorte es demasiado grande para convertirlo en este dispositivo. Usá TS o un recorte más corto.');pieces.push(piece);$('export-progress').value=Math.round((i+1)/chosen.length*100);progress(`Descargando segmentos ${i+1}/${chosen.length}…`)}let blob;if(mp4){progress('Empaquetando MP4 sin recodificar…');blob=await transmuxMp4(pieces)}else blob=new Blob(pieces,{type:'video/mp2t'});const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download=downloadName(full,a,b,mp4?'mp4':'ts');document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);progress(`Archivo ${mp4?'MP4':'TS'} generado (${(blob.size/1048576).toFixed(1)} MB). El recorte se ajusta a segmentos HLS.`)}catch(e){console.error('[Beelup MP4] Export failed:',e);progress('Error en descarga: '+(e?.message||String(e)||'Fallo desconocido del motor MP4'))}finally{busy=false;$('download-clip').disabled=$('download-full').disabled=$('download-mp4').disabled=false}}
 // FFmpeg 0.12 single-thread: no SharedArrayBuffer / cross-origin isolation required.
 // Load UMD bundles via blob URLs to keep the Worker and WASM same-origin to their loader.
 let ffmpegPromise;
@@ -76,14 +76,15 @@ async function getFFmpeg(){
     const ff=new window.FFmpegWASM.FFmpeg();
     // ffmpeg.js UMD 0.12.10 uses the 814 worker chunk.
     // Only the class worker must be same-origin; FFmpeg core is explicitly ST.
-    const classWorkerURL=await ffmpegBlobURL(ffmpegBase+'/814.ffmpeg.js','text/javascript');
+    const classWorkerURL=URL.createObjectURL(new Blob([`importScripts(${JSON.stringify(ffmpegBase+'/814.ffmpeg.js')});`],{type:'text/javascript'}));
+    ffmpegObjectUrls.push(classWorkerURL);
     const coreURL=await ffmpegBlobURL(coreBase+'/ffmpeg-core.js','text/javascript');
     const wasmURL=await ffmpegBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm');
     try{
-      await ff.load({classWorkerURL,coreURL,wasmURL});
+      await Promise.race([ff.load({classWorkerURL,coreURL,wasmURL}),new Promise((_,reject)=>setTimeout(()=>reject(Error('Tiempo agotado iniciando FFmpeg. Revisá el acceso a cdn.jsdelivr.net.')),45000))]);
     }catch(e){
       if(/SharedArrayBuffer/.test(String(e)))throw Error('El motor FFmpeg cargó una compilación incompatible con este navegador (SharedArrayBuffer).');
-      throw e;
+      throw Error('No se pudo iniciar el motor MP4: '+(e?.message||String(e)||'error interno del Worker'));
     }
     return ff;
   })().catch(e=>{ffmpegPromise=null;throw e});
@@ -105,7 +106,9 @@ async function transmuxMp4(pieces){
     if(result.length<1024)throw Error('MP4 vacío.');
     // A successful remux must have MP4 file type and movie metadata boxes.
     const ascii=(from,n)=>String.fromCharCode(...result.subarray(from,from+n));
-    if(ascii(4,4)!=='ftyp'||!ascii(0,Math.min(result.length,1024*1024)).includes('moov'))throw Error('Archivo MP4 inválido.');
+    if(ascii(4,4)!=='ftyp'){throw Error('Archivo MP4 inválido (sin ftyp).')}
+    let hasMoov=false;for(let i=0;i<Math.min(result.length,1048576)-3;i++){if(result[i]===109&&result[i+1]===111&&result[i+2]===111&&result[i+3]===118){hasMoov=true;break}}
+    if(!hasMoov)throw Error('Archivo MP4 inválido (sin moov).');
     return new Blob([result.slice()],{type:'video/mp4'});
   }finally{
     try{await ff.deleteFile('input.ts')}catch{}

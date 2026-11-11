@@ -67,17 +67,24 @@ function loadScript(url){return new Promise((resolve,reject)=>{
 })}
 async function getFFmpeg(){
   if(!ffmpegPromise)ffmpegPromise=(async()=>{
-    const ffmpegBase='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd';
-    const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+    // Pin both packages to the documented single-thread configuration.
+    // @ffmpeg/core-mt must NOT be used on GitHub Pages without COOP/COEP.
+    const ffmpegBase='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd';
+    const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
     if(!window.FFmpegWASM?.FFmpeg)await loadScript(ffmpegBase+'/ffmpeg.js');
-    if(!window.FFmpegWASM?.FFmpeg)throw Error('FFmpeg 0.12 no disponible.');
+    if(!window.FFmpegWASM?.FFmpeg)throw Error('No se pudo inicializar FFmpeg 0.12.');
     const ff=new window.FFmpegWASM.FFmpeg();
-    const [classWorkerURL,coreURL,wasmURL]=await Promise.all([
-      ffmpegBlobURL(ffmpegBase+'/814.ffmpeg.js','text/javascript'),
-      ffmpegBlobURL(coreBase+'/ffmpeg-core.js','text/javascript'),
-      ffmpegBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm')
-    ]);
-    await ff.load({classWorkerURL,coreURL,wasmURL});
+    // ffmpeg.js UMD 0.12.10 uses the 814 worker chunk.
+    // Only the class worker must be same-origin; FFmpeg core is explicitly ST.
+    const classWorkerURL=await ffmpegBlobURL(ffmpegBase+'/814.ffmpeg.js','text/javascript');
+    const coreURL=await ffmpegBlobURL(coreBase+'/ffmpeg-core.js','text/javascript');
+    const wasmURL=await ffmpegBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm');
+    try{
+      await ff.load({classWorkerURL,coreURL,wasmURL});
+    }catch(e){
+      if(/SharedArrayBuffer/.test(String(e)))throw Error('El motor FFmpeg cargó una compilación incompatible con este navegador (SharedArrayBuffer).');
+      throw e;
+    }
     return ff;
   })().catch(e=>{ffmpegPromise=null;throw e});
   return ffmpegPromise;

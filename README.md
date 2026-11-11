@@ -1,10 +1,17 @@
-# Beelup Studio v0.5 — prueba de reproductor integrado
+# Beelup Studio v0.7 — Editor experimental
 
-La búsqueda multipaís sigue usando el Worker existente `https://beelup-studio-api.mgcarnevali.workers.dev/api/beelup`. No se requieren cambios en Cloudflare.
+## Instalación
 
-Tras seleccionar un partido, «Probar reproductor integrado» inserta la URL oficial `https://beelup.com/{pais}/pedir-partido?...` en un iframe. El acceso, la autenticación y los permisos siguen siendo gestionados por Beelup. **No está comprobado que Beelup permita mostrarse en un iframe**: encabezados `X-Frame-Options` o CSP `frame-ancestors` pueden bloquearlo, y algunos flujos requieren cookies de terceros. Si falla, usar «Abrir en Beelup».
+1. **Cloudflare:** reemplazar el código del Worker `beelup-studio-api` por el contenido de `worker.js` y desplegar.
+2. **GitHub Pages:** subir `index.html`, `app.js`, `studio.js`, `style.css`, `sw.js`, `icon.svg` y `manifest.webmanifest` a la raíz. **No subir `worker.js` a GitHub Pages**: es código del Worker.
+3. Abrir en incógnito, elegir partido, pulsar **Preparar video**.
 
-Esta versión no reproduce directamente HLS, no consulta códigos privados, no descarga videos y no cambia el Worker. Para una reproducción HLS nativa dentro de la PWA haría falta verificar el flujo autorizado de obtención del ID y las restricciones CORS de playlists y segmentos.
+## Alcance real
 
-## Publicación
-Subir los archivos a la raíz de `BeelupStudio` en GitHub, reemplazando los anteriores. Commit sugerido: `Add official player embed test with fallback`. Si persiste la versión vieja, probar en incógnito o borrar datos del sitio para actualizar el service worker.
+- Mantiene la búsqueda multipaís y el reproductor oficial.
+- Añade reproductor HLS propio usando hls.js y un proxy restringido de segmentos en el Worker.
+- Exporta partido completo o fragmento en **MPEG-TS (.ts)**, no MP4. Los recortes se aproximan a límites de segmentos de unos 2 segundos.
+- No probado contra el servidor real en esta entrega: el flujo de resolución, la sesión, los permisos de origen o el CDN pueden impedir la reproducción o descarga.
+- El Worker solo permite la API conocida y segmentos bajo `*.do.revivitupartido.com/hls/videoscloud/`. No es un proxy abierto.
+- El procesamiento se hace en memoria del navegador: los partidos grandes pueden agotar RAM. No hay conversión MP4 ni procesamiento de video en Cloudflare.
+- Usar únicamente grabaciones que se tenga autorización para reproducir y descargar. No intenta eludir pagos o restricciones.

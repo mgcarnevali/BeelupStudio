@@ -89,6 +89,7 @@ $('find').addEventListener('click', () => {
   $('watch').href = url;
   closePlayer();
   $('result').classList.remove('hidden');
+  window.dispatchEvent(new CustomEvent('beelup:selection', {detail:{club,court,date,time,code:countryCode()}}));
   $('result').scrollIntoView({ behavior: 'smooth' });
   status('Selección lista. Abrí el partido en el sitio oficial.');
 });

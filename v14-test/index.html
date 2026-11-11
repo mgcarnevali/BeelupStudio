@@ -10,8 +10,8 @@
 <link rel="preload" href="./fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
 <title>Beelup Studio v1.4 (prueba)</title>
 <meta name="robots" content="noindex">
-<script src="./diag-early.js?v=14t4"></script>
-<link rel="stylesheet" href="./style.css?v=14t4">
+<script src="./diag-early.js?v=14t5"></script>
+<link rel="stylesheet" href="./style.css?v=14t5">
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -181,15 +181,15 @@
       <button id="cancel-export" class="dl-cancel hidden" type="button" aria-label="Cancelar descarga"><svg class="i"><use href="#i-x"/></svg></button>
      </div>
     </div>
-    <div class="share-wrap" id="share-wrap">
-     <div class="dl dl-share" id="dl-share">
-      <button id="share-go" class="dl-btn" type="button" aria-haspopup="dialog">
+    <div class="bardo-wrap" id="bardo-wrap">
+     <div class="dl dl-bardo" id="dl-bardo">
+      <button id="bardo-go" class="dl-btn" type="button" aria-haspopup="dialog">
        <span class="dl-layer dl-base"><svg class="i"><use href="#i-share"/></svg><span class="dl-text"><span class="dl-title">Bardealo por WhatsApp 😈</span><small class="dl-sub"></small></span></span>
        <span class="dl-layer dl-fill" aria-hidden="true"><svg class="i"><use href="#i-share"/></svg><span class="dl-text"><span class="dl-title">Bardealo por WhatsApp 😈</span><small class="dl-sub"></small></span></span>
       </button>
-      <button id="cancel-share" class="dl-cancel hidden" type="button" aria-label="Cancelar preparación"><svg class="i"><use href="#i-x"/></svg></button>
+      <button id="bardo-cancel" class="dl-cancel hidden" type="button" aria-label="Cancelar preparación"><svg class="i"><use href="#i-x"/></svg></button>
      </div>
-     <p id="share-hint" class="share-hint"></p>
+     <p id="bardo-hint" class="bardo-hint"></p>
     </div>
     <progress id="export-progress" class="sr-only" value="0" max="100"></progress>
     <div id="export-card" class="export-card hidden"><svg class="i ec-ok"><use href="#i-check"/></svg><svg class="i ec-err"><use href="#i-alert"/></svg><div class="ec-body"><p id="export-status" role="status"></p></div></div>
@@ -198,7 +198,7 @@
   </div>
  </main>
 
- <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4 · prueba 4 · compartir archivos: <span id="build-share">—</span></span><pre id="diag" class="diag" aria-hidden="true"></pre></footer>
+ <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4 · prueba 5 · compartir archivos: <span id="build-share">—</span></span><pre id="diag" class="diag" aria-hidden="true"></pre></footer>
 </div>
 <dialog id="bardo" class="bardo" aria-labelledby="bardo-title">
  <form method="dialog" class="bardo-inner">
@@ -218,9 +218,9 @@
  </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js" defer></script>
-<script src="./app.js?v=14t4" defer></script>
-<script src="./remux.js?v=14t4" defer></script>
-<script src="./studio.js?v=14t4" defer></script>
-<script src="./diag.js?v=14t4" defer></script>
+<script src="./app.js?v=14t5" defer></script>
+<script src="./remux.js?v=14t5" defer></script>
+<script src="./studio.js?v=14t5" defer></script>
+<script src="./diag.js?v=14t5" defer></script>
 </body>
 </html>

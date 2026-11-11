@@ -469,26 +469,26 @@ body.has-match .finder-status{display:none}
 }
 
 /* Bardealo por WhatsApp: segundo botón, oscuro con detalle lima */
-.share-wrap{display:flex;flex-direction:column;gap:8px}
-.dl-share .dl-btn{background:var(--s3);color:var(--lime);box-shadow:inset 0 0 0 1px #c4f54a52;font-size:15px}
-.dl-share .dl-btn:hover:not(:disabled){background:var(--s4)}
-.dl-share .dl-btn:disabled:not(.x){cursor:not-allowed}
-.dl-share:not(.busy) .dl-btn:disabled{color:var(--dim);box-shadow:inset 0 0 0 1px var(--line2)}
-.dl-share.busy .dl-btn{box-shadow:none}
-.share-hint{margin:0 4px;font-size:12px;line-height:1.5;color:#e9d27a}
-.share-hint:empty{display:none}
+.bardo-wrap{display:flex;flex-direction:column;gap:8px}
+.dl-bardo .dl-btn{background:var(--s3);color:var(--lime);box-shadow:inset 0 0 0 1px #c4f54a52;font-size:15px}
+.dl-bardo .dl-btn:hover:not(:disabled){background:var(--s4)}
+.dl-bardo .dl-btn:disabled:not(.x){cursor:not-allowed}
+.dl-bardo:not(.busy) .dl-btn:disabled{color:var(--dim);box-shadow:inset 0 0 0 1px var(--line2)}
+.dl-bardo.busy .dl-btn{box-shadow:none}
+.bardo-hint{margin:0 4px;font-size:12px;line-height:1.5;color:#e9d27a}
+.bardo-hint:empty{display:none}
 .bardo-clip-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
 .bardo-clip-text b{color:var(--lime);font-weight:600;font-size:12.5px}
 .bardo-clip-text #bardo-file{font-size:12px}
-@media (min-width:1100px) and (max-width:1600px){.dl-share .dl-btn{height:46px}}
+@media (min-width:1100px) and (max-width:1600px){.dl-bardo .dl-btn{height:46px}}
 @media (max-width:1099px){
  .export>.field-group{order:1}
- .share-wrap{order:2;margin:12px 0 18px}
+ .bardo-wrap{order:2;margin:12px 0 18px}
  .dl-bar{order:3}
  .export-card{order:4}
  .export-hint{order:5}
- .dl-share .dl-btn{height:48px;border-radius:24px;font-size:14px}
- .dl-share .dl-layer{justify-content:center}
+ .dl-bardo .dl-btn{height:48px;border-radius:24px;font-size:14px}
+ .dl-bardo .dl-layer{justify-content:center}
 }
 
 /* Sólo /v14-test/: diagnóstico */

@@ -9,16 +9,16 @@
   const $ = id => document.getElementById(id);
   function report() {
     const L = [];
-    const w = $('share-wrap'), g = $('share-go');
-    if (!w || !g) L.push('share-wrap: NO EXISTE en el HTML');
+    const w = $('bardo-wrap'), g = $('bardo-go');
+    if (!w || !g) L.push('bardo-wrap: NO EXISTE en el HTML');
     else {
       const cs = getComputedStyle(w), r = g.getBoundingClientRect(), rw = w.getBoundingClientRect();
-      L.push('share-wrap: clase="' + w.className + '" display=' + cs.display + ' alto=' + Math.round(rw.height) + ' top=' + Math.round(rw.top + scrollY));
+      L.push('bardo-wrap: clase="' + w.className + '" display=' + cs.display + ' alto=' + Math.round(rw.height) + ' top=' + Math.round(rw.top + scrollY));
       L.push('botón: ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' disabled=' + g.disabled);
       let top = '—';
       if (r.height && r.bottom > 0 && r.top < innerHeight) {
         const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        top = !e ? 'nada' : e.closest('#share-go') ? 'el botón' : (e.closest('.dl-bar') ? 'BARRA INFERIOR' : (e.id || e.className || e.tagName));
+        top = !e ? 'nada' : e.closest('#bardo-go') ? 'el botón' : (e.closest('.dl-bar') ? 'BARRA INFERIOR' : (e.id || e.className || e.tagName));
       }
       L.push('encima del botón: ' + top);
       const b = document.querySelector('.dl-bar');

@@ -499,7 +499,7 @@
     mp4: document.querySelector('input[name=format]:checked').value === 'mp4',
     full: document.querySelector('input[name=scope]:checked').value === 'full'
   });
-  // Botón que muestra el progreso de la exportación en curso: 'download' o 'share-go'.
+  // Botón que muestra el progreso de la exportación en curso: 'download' o 'bardo-go'.
   let activeBtn = 'download';
   function setDownloadLabel(title, sub = '', id = 'download') {
     for (const layer of document.querySelectorAll(`#${id} .dl-layer`)) {
@@ -529,13 +529,13 @@
   function setBusy(on, which = 'download') {
     busy = on;
     if (on) activeBtn = which;
-    const share = activeBtn === 'share-go';
+    const share = activeBtn === 'bardo-go';
     $('dl').classList.toggle('busy', on && !share);
-    $('dl-share').classList.toggle('busy', on && share);
+    $('dl-bardo').classList.toggle('busy', on && share);
     $('download').disabled = on;
-    $('share-go').disabled = on || !SHARE_SUPPORTED;
+    $('bardo-go').disabled = on || !SHARE_SUPPORTED;
     $('cancel-export').classList.toggle('hidden', !(on && !share));
-    $('cancel-share').classList.toggle('hidden', !(on && share));
+    $('bardo-cancel').classList.toggle('hidden', !(on && share));
     for (const el of document.querySelectorAll('input[name=format], input[name=scope], #export-mode')) el.disabled = on;
     $(activeBtn).style.setProperty('--p', '0%');
     if (!on) { activeBtn = 'download'; syncMode(); }
@@ -610,7 +610,7 @@
     setShareClip(null);
     exportAbort = new AbortController();
     const signal = exportAbort.signal;
-    setBusy(true, sharing ? 'share-go' : 'download');
+    setBusy(true, sharing ? 'bardo-go' : 'download');
     progress('');
     const stepTitle = sharing ? 'Preparando' : 'Descargando';
     setDownloadProgress(0, stepTitle, `0/${chosen.length} · 0%`);
@@ -669,8 +669,8 @@
   }
 
   $('cancel-export').addEventListener('click', () => exportAbort && exportAbort.abort());
-  $('cancel-share').addEventListener('click', () => exportAbort && exportAbort.abort());
-  $('share-go').addEventListener('click', () => { const m = mode(); if (m.mp4 && !m.full) exportVideo(false, true, 'share'); });
+  $('bardo-cancel').addEventListener('click', () => exportAbort && exportAbort.abort());
+  $('bardo-go').addEventListener('click', () => { const m = mode(); if (m.mp4 && !m.full) exportVideo(false, true, 'share'); });
   $('download').addEventListener('click', () => { const m = mode(); exportVideo(m.full, m.mp4); });
 
   /* ---------------- Buscador (presentación) ---------------- */
@@ -752,9 +752,9 @@
   function updateShareUI() {
     const m = mode();
     const show = m.mp4 && !m.full;
-    $('share-wrap').classList.toggle('hidden', !show);
-    if (!busy) { $('share-go').disabled = !SHARE_SUPPORTED; setDownloadLabel('Bardealo por WhatsApp 😈', '', 'share-go'); }
-    $('share-hint').textContent = SHARE_SUPPORTED ? '' : 'Este navegador no permite compartir archivos. Usá «Descargar recorte MP4» y adjuntalo en WhatsApp.';
+    $('bardo-wrap').classList.toggle('hidden', !show);
+    if (!busy) { $('bardo-go').disabled = !SHARE_SUPPORTED; setDownloadLabel('Bardealo por WhatsApp 😈', '', 'bardo-go'); }
+    $('bardo-hint').textContent = SHARE_SUPPORTED ? '' : 'Este navegador no permite compartir archivos. Usá «Descargar recorte MP4» y adjuntalo en WhatsApp.';
   }
   const mbShort = bytes => (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB';
   function setShareClip(clip) {

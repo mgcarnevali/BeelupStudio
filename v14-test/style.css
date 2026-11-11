@@ -431,8 +431,6 @@ body.has-match .finder-status{display:none}
 
 /* ---------------- v1.4 · Bardealo ---------------- */
 .ec-body{flex:1;min-width:0}
-.bardo-btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;margin-top:12px;border-radius:20px;background:var(--s3);color:var(--lime);font-size:14px;font-weight:650;box-shadow:inset 0 0 0 1px #c4f54a40}
-.bardo-btn:hover{background:var(--s4)}
 .bardo{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 48px);padding:0;border:0;border-radius:24px;background:var(--s1);color:var(--tx);box-shadow:0 30px 80px #000000b3,inset 0 0 0 1px var(--line2)}
 .bardo::backdrop{background:#000000a6;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .bardo[open]{animation:bardo-in .18s ease-out}
@@ -461,7 +459,6 @@ body.has-match .finder-status{display:none}
 .bardo-share .i{width:20px;height:20px;stroke-width:2}
 .bardo-share:disabled{background:var(--s3);color:var(--dim);cursor:not-allowed}
 @media (max-width:1099px){
- .bardo-btn{height:38px;font-size:13.5px;margin-top:10px}
  .bardo{width:100%;max-width:100%;margin:auto 0 0;border-radius:24px 24px 0 0;max-height:92vh}
  .bardo[open]{animation:bardo-up .22s ease-out}
  @keyframes bardo-up{from{transform:translateY(40px);opacity:.4}}
@@ -470,8 +467,26 @@ body.has-match .finder-status{display:none}
  .bardo-tools .pill-btn{flex:1;justify-content:center}
  .bardo-share{height:52px}
 }
-@media (min-width:1100px){
- .export-card{position:relative}
- .export-card .bardo-btn{position:absolute;top:50%;right:14px;transform:translateY(-50%);margin:0;height:38px;padding:0 15px;font-size:13.5px}
- .export-card:has(.bardo-btn:not(.hidden)) .ec-body{padding-right:136px}
+
+/* Bardealo por WhatsApp: segundo botón, oscuro con detalle lima */
+.share-wrap{display:flex;flex-direction:column;gap:8px}
+.dl-share .dl-btn{background:var(--s3);color:var(--lime);box-shadow:inset 0 0 0 1px #c4f54a52;font-size:15px}
+.dl-share .dl-btn:hover:not(:disabled){background:var(--s4)}
+.dl-share .dl-btn:disabled:not(.x){cursor:not-allowed}
+.dl-share:not(.busy) .dl-btn:disabled{color:var(--dim);box-shadow:inset 0 0 0 1px var(--line2)}
+.dl-share.busy .dl-btn{box-shadow:none}
+.share-hint{margin:0 4px;font-size:12px;line-height:1.5;color:#e9d27a}
+.share-hint:empty{display:none}
+.bardo-clip-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.bardo-clip-text b{color:var(--lime);font-weight:600;font-size:12.5px}
+.bardo-clip-text #bardo-file{font-size:12px}
+@media (min-width:1100px) and (max-width:1600px){.dl-share .dl-btn{height:46px}}
+@media (max-width:1099px){
+ .export>.field-group{order:1}
+ .share-wrap{order:2;margin:12px 0 18px}
+ .dl-bar{order:3}
+ .export-card{order:4}
+ .export-hint{order:5}
+ .dl-share .dl-btn{height:48px;border-radius:24px;font-size:14px}
+ .dl-share .dl-layer{justify-content:center}
 }

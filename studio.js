@@ -20,7 +20,6 @@ function syncPlayer(){const v=$('native-video');$('play-toggle').innerHTML=icon(
 function suggestedName(){const clean=v=>String(v||'').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').replace(/\s+/g,' ').trim();const courtLabel=$('court')?.selectedOptions?.[0]?.textContent?.trim();const courtName=courtLabel&&!/^elegí|^seleccion/i.test(courtLabel)?courtLabel:selection?.court;return [selection?.club,courtName,selection?.date,selection?.time?.replace(':','-')].map(clean).filter(Boolean).join(' - ')||'Mi partido'}
 function downloadName(full,a,b,ext){let base=($('export-name').value||suggestedName()).replace(/\.(mp4|ts)$/i,'').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').trim().replace(/[. ]+$/,'');if(!base)base='Mi partido';return (base+(full?' - completo':` - ${fmt(a).replaceAll(':','-')} a ${fmt(b).replaceAll(':','-')}`)).slice(0,195)+'.'+ext}
 function makePlayer(txt){const proxied=txt.split(/\r?\n/).map(line=>line&&!line.startsWith('#')?BASE+'/api/segment?'+new URLSearchParams({url:line}):line).join('\n');playlistBlob=URL.createObjectURL(new Blob([proxied],{type:'application/vnd.apple.mpegurl'}));const video=$('native-video');
-const stage=$('video-stage');let hideControlsTimer;function showControls(){stage.classList.remove('controls-idle');clearTimeout(hideControlsTimer);if(!video.paused)hideControlsTimer=setTimeout(()=>stage.classList.add('controls-idle'),3200)}stage.addEventListener('pointermove',showControls);stage.addEventListener('pointerdown',showControls);video.addEventListener('pause',showControls);video.addEventListener('play',showControls);
 if(window.Hls&&Hls.isSupported()){hls=new Hls({enableWorker:true});hls.loadSource(playlistBlob);hls.attachMedia(video);hls.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal)message('Error del reproductor: '+data.details)})}else if(video.canPlayType('application/vnd.apple.mpegurl'))video.src=playlistBlob;else message('Este navegador no admite HLS; la exportación puede seguir disponible.');}
 async function loadVideo(){if(!selection)return;const version=loadVersion;clear();message('Buscando grabación y playlist HLS…');try{const resolved=await (await api('/api/resolve',{code:selection.code,complejo:selection.club,cancha:selection.court,fecha:selection.date,hora:selection.time})).json();if(version!==loadVersion)return;const r=await api('/api/playlist',{id:resolved.id,camara:'central'});const txt=await r.text();if(version!==loadVersion)return;if(!txt.startsWith('#EXTM3U'))throw Error('No se recibió una playlist HLS.');const parsed=parsePlaylist(txt);segments=parsed.items;duration=parsed.time;makePlayer(txt);$('video-duration').textContent='Duración: '+fmt(duration);$('player-controls').classList.remove('hidden');$('seek').max=duration;$('clip-start').value='00:00:00';$('clip-end').value=fmt(Math.min(300,duration));$('studio-editor').classList.remove('hidden');$('trim-in').max=Math.floor(duration);$('trim-out').max=Math.floor(duration);$('trim-in').value=0;$('trim-out').value=Math.floor(Math.min(300,duration));$('export-name').value=suggestedName();$('video-placeholder').classList.add('hidden');showControls();$('player-error').classList.add('hidden');message('Video listo. Elegí el fragmento o descargá el partido completo.');update();syncPlayer();}catch(e){if(version!==loadVersion)return;message('No se pudo cargar el video: '+e.message);$('player-error').classList.remove('hidden');console.warn(e)}}
 $('retry-video').addEventListener('click',()=>{loadVersion++;loadVideo()});
@@ -44,15 +43,68 @@ $('mute').addEventListener('click',()=>{video.muted=!video.muted;syncPlayer()});
 $('speed').addEventListener('change',()=>video.playbackRate=+$('speed').value);
 $('fullscreen').addEventListener('click',()=>{const stage=document.querySelector('.video-stage');if(document.fullscreenElement)document.exitFullscreen();else if(stage.requestFullscreen)stage.requestFullscreen();else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen()});
 for(const event of ['play','pause','loadedmetadata','seeking','seeked'])video.addEventListener(event,syncPlayer);
-video.addEventListener('timeupdate',()=>{syncPlayer();if(previewing&&video.currentTime>=seconds($('clip-end').value)){previewing=false;video.pause();$('preview-clip').textContent='▶ Reproducir recorte'}});
+video.addEventListener('timeupdate',()=>{syncPlayer();if(previewing&&video.currentTime>=seconds($('clip-end').value)){previewing=false;video.pause();$('preview-clip').innerHTML=icon('play');$('preview-clip').setAttribute('aria-label','Reproducir recorte')}});
 
 async function exportVideo(full,mp4=false){if(busy||!segments.length)return;const a=full?0:seconds($('clip-start').value),b=full?duration:seconds($('clip-end').value);if(!Number.isFinite(a)||!Number.isFinite(b)||a<0||b>duration+0.1||a>=b){progress('Inicio y fin inválidos.');return;}const chosen=segments.filter(s=>s.end>a&&s.start<b);if(!chosen.length)return;const approx=(chosen.at(-1).end-chosen[0].start);if(!full&&approx>600&&!confirm('El fragmento supera 10 minutos y puede consumir mucha memoria. ¿Continuar?'))return;if(full&&!confirm('Un partido completo puede superar la memoria del navegador y consumir muchos datos. ¿Continuar?'))return;
  busy=true;$('download-clip').disabled=$('download-full').disabled=$('download-mp4').disabled=true;$('export-progress').classList.remove('hidden');$('export-progress').value=0;
  try{const pieces=[];let bytes=0;for(let i=0;i<chosen.length;i++){const r=await api('/api/segment',{url:chosen[i].url});const piece=await r.blob();bytes+=piece.size;if(mp4&&bytes>(/Android|iPhone|iPad/i.test(navigator.userAgent)?90:220)*1048576)throw Error('El recorte es demasiado grande para convertirlo en este dispositivo. Usá TS o un recorte más corto.');pieces.push(piece);$('export-progress').value=Math.round((i+1)/chosen.length*100);progress(`Descargando segmentos ${i+1}/${chosen.length}…`)}let blob;if(mp4){progress('Empaquetando MP4 sin recodificar…');blob=await transmuxMp4(pieces)}else blob=new Blob(pieces,{type:'video/mp2t'});const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download=downloadName(full,a,b,mp4?'mp4':'ts');document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);progress(`Archivo ${mp4?'MP4':'TS'} generado (${(blob.size/1048576).toFixed(1)} MB). El recorte se ajusta a segmentos HLS.`)}catch(e){progress('Error en descarga: '+e.message)}finally{busy=false;$('download-clip').disabled=$('download-full').disabled=$('download-mp4').disabled=false}}
+// FFmpeg 0.12 single-thread: no SharedArrayBuffer / cross-origin isolation required.
+// Load UMD bundles via blob URLs to keep the Worker and WASM same-origin to their loader.
 let ffmpegPromise;
-function loadScript(url){return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=url;script.onload=resolve;script.onerror=()=>reject(Error('No se pudo cargar FFmpeg. Revisá tu conexión.'));document.head.append(script)})}
-async function getFFmpeg(){if(!ffmpegPromise)ffmpegPromise=(async()=>{if(!window.FFmpeg?.createFFmpeg)await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');if(!window.FFmpeg?.createFFmpeg)throw Error('FFmpeg no disponible.');const ff=FFmpeg.createFFmpeg({log:false,corePath:'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'});await ff.load();return ff})().catch(e=>{ffmpegPromise=null;throw e});return ffmpegPromise}
-async function transmuxMp4(pieces){progress('Cargando motor de conversión MP4…');const ff=await getFFmpeg();const data=new Uint8Array(pieces.reduce((n,p)=>n+p.size,0));let offset=0;for(const piece of pieces){const arr=new Uint8Array(await piece.arrayBuffer());data.set(arr,offset);offset+=arr.length}progress('Generando MP4 con audio, video e índice de búsqueda…');ff.FS('writeFile','input.ts',data);try{await ff.run('-fflags','+genpts','-i','input.ts','-map','0:v:0','-map','0:a?','-c','copy','-movflags','+faststart','output.mp4');const result=ff.FS('readFile','output.mp4');if(result.length<1024)throw Error('MP4 vacío.');return new Blob([result.slice()],{type:'video/mp4'})}finally{try{ff.FS('unlink','input.ts')}catch{}try{ff.FS('unlink','output.mp4')}catch{}}}
+const ffmpegObjectUrls=[];
+async function ffmpegBlobURL(url, mime){
+  const response=await fetch(url,{mode:'cors'});
+  if(!response.ok)throw Error(`No se pudo descargar FFmpeg (${response.status}).`);
+  const blob=new Blob([await response.arrayBuffer()],{type:mime});
+  const objectURL=URL.createObjectURL(blob);
+  ffmpegObjectUrls.push(objectURL);
+  return objectURL;
+}
+function loadScript(url){return new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src=url;
+  script.onload=resolve;script.onerror=()=>reject(Error('No se pudo cargar FFmpeg.'));
+  document.head.append(script);
+})}
+async function getFFmpeg(){
+  if(!ffmpegPromise)ffmpegPromise=(async()=>{
+    const ffmpegBase='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd';
+    const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+    if(!window.FFmpegWASM?.FFmpeg)await loadScript(ffmpegBase+'/ffmpeg.js');
+    if(!window.FFmpegWASM?.FFmpeg)throw Error('FFmpeg 0.12 no disponible.');
+    const ff=new window.FFmpegWASM.FFmpeg();
+    const [classWorkerURL,coreURL,wasmURL]=await Promise.all([
+      ffmpegBlobURL(ffmpegBase+'/814.ffmpeg.js','text/javascript'),
+      ffmpegBlobURL(coreBase+'/ffmpeg-core.js','text/javascript'),
+      ffmpegBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm')
+    ]);
+    await ff.load({classWorkerURL,coreURL,wasmURL});
+    return ff;
+  })().catch(e=>{ffmpegPromise=null;throw e});
+  return ffmpegPromise;
+}
+async function transmuxMp4(pieces){
+  progress('Cargando motor MP4 (primera vez puede tardar)…');
+  const ff=await getFFmpeg();
+  const total=pieces.reduce((n,p)=>n+p.size,0);
+  const data=new Uint8Array(total);
+  let offset=0;
+  for(const piece of pieces){const arr=new Uint8Array(await piece.arrayBuffer());data.set(arr,offset);offset+=arr.length}
+  progress('Generando MP4 sin recodificar…');
+  await ff.writeFile('input.ts',data);
+  try{
+    const exit=await ff.exec(['-fflags','+genpts','-i','input.ts','-map','0:v:0','-map','0:a?','-c','copy','-movflags','+faststart','output.mp4']);
+    if(exit!==0)throw Error(`FFmpeg terminó con código ${exit}.`);
+    const result=await ff.readFile('output.mp4');
+    if(result.length<1024)throw Error('MP4 vacío.');
+    // A successful remux must have MP4 file type and movie metadata boxes.
+    const ascii=(from,n)=>String.fromCharCode(...result.subarray(from,from+n));
+    if(ascii(4,4)!=='ftyp'||!ascii(0,Math.min(result.length,1024*1024)).includes('moov'))throw Error('Archivo MP4 inválido.');
+    return new Blob([result.slice()],{type:'video/mp4'});
+  }finally{
+    try{await ff.deleteFile('input.ts')}catch{}
+    try{await ff.deleteFile('output.mp4')}catch{}
+  }
+}
 $('download-mp4').addEventListener('click',()=>exportVideo(false,true));
 $('download-clip').addEventListener('click',()=>exportVideo(false));$('download-full').addEventListener('click',()=>exportVideo(true));
 })();

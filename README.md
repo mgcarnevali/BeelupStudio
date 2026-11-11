@@ -1,12 +1,9 @@
-# Beelup Studio v1.0 — Reproductor responsive y exportación MP4
+# Beelup Studio v1.1 — Player redesign
 
-Reemplazar en GitHub Pages: `index.html`, `style.css`, `studio.js`, `sw.js`.
+Reemplazar en GitHub Pages únicamente: `index.html`, `style.css`, `studio.js`, `sw.js`. No modificar Cloudflare Worker ni app.js.
 
-- Controles propios adaptados a móviles; reproducción y búsqueda con una sola barra.
-- Inicio/fin editables y botones para marcar desde la posición actual.
-- Nombre de archivo editable, sugerido a partir del partido.
-- TS: mismo procedimiento de descarga comprobado en v0.8.
-- MP4: FFmpeg WebAssembly convierte TS a MP4 con `-c copy -movflags +faststart`; necesita descargar el motor al primer uso, consume memoria, limita tamaño (90 MiB móvil / 220 MiB escritorio). No se garantiza compatibilidad de todos los navegadores/códecs. La selección sigue alineada a segmentos HLS.
-- Cloudflare Worker: **sin cambios**.
-
-Probar MP4 en Chrome y VLC y probar descarga en Android/iOS antes de considerarlo validado. La conversión de partidos completos no está habilitada en MP4.
+- Controles SVG superpuestos sobre el video, autoocultables durante reproducción; móvil y escritorio.
+- Editor compacto con rango IN/OUT, campos editables y botones de marcar y previsualizar.
+- Nombre de descarga editable y menú para opciones TS.
+- Se mantiene la descarga TS y el mecanismo MP4 FFmpeg de v1.0 **sin cambios**. El MP4 sigue pendiente de verificación real en VLC y móviles; no se afirma que esté corregido.
+- Probar en Chrome Android, Safari iOS, escritorio y VLC antes de publicar como estable.

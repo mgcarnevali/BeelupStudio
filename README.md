@@ -1,4 +1,20 @@
-# Beelup Studio v1.2 — MP4 nativo en el navegador
+# Beelup Studio v1.3 — Padel Studio Premium
+
+Publicar en GitHub Pages: `index.html`, `style.css`, `app.js`, `studio.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest` y la carpeta **`fonts/` (nueva)**.
+No requiere cambios en el Cloudflare Worker. `app.js` y `remux.js` son idénticos a la v1.2.
+
+## Rediseño visual (v1.3)
+
+- Identidad "Padel Studio Premium": negro con verde lima, tipografía condensada de marcador (Barlow Condensed), Inter para textos y JetBrains Mono para tiempos. Fuentes alojadas en el propio sitio (`fonts/`, licencia OFL), sin servicios externos.
+- Escritorio: buscador en una barra horizontal, marcador del partido (club, cancha, fecha, horario, duración), reproductor protagonista con controles superpuestos, panel "Tu jugada" con inicio y fin en números grandes, exportación con Formato (MP4/TS) y Alcance (recorte/partido completo), y línea de tiempo a todo el ancho con tiradores grandes de inicio y fin.
+- Móvil: buscador en pasos numerados con los horarios como botones; con el partido cargado, el buscador se pliega (botón de búsqueda arriba). Controles centrales sobre el video, línea de tiempo táctil, nombre de archivo en hasta tres líneas y barra de descarga fija abajo.
+- Botón de descarga con progreso: texto en dos capas recortadas por el avance, legible del 0 % al 100 % (contraste ≥ 5,4:1 en todos los estados).
+- Iconos SVG propios (sprite en `index.html`), sin dependencias nuevas.
+- Mismas funciones que la v1.2: los cuatro tipos de descarga se eligen con Formato + Alcance (o el selector compacto en móvil).
+
+## Versiones anteriores
+
+### v1.2 — MP4 nativo en el navegador
 
 Publicar en GitHub Pages: `index.html`, `style.css`, `app.js`, `studio.js`, **`remux.js` (nuevo)**, `sw.js`, `icon.svg`, `manifest.webmanifest`.
 No hace falta modificar el Cloudflare Worker (se usan los mismos endpoints `/api/beelup`, `/api/resolve`, `/api/playlist` y `/api/segment`).

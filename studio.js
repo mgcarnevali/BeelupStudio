@@ -1,5 +1,7 @@
 'use strict';
-/* Beelup Studio v1.2 — reproductor, recorte y exportación (TS / MP4). */
+/* Beelup Studio v1.3 — reproductor, recorte y exportación (TS / MP4).
+   La lógica de reproducción, recorte y descarga es la de la v1.2; esta versión
+   cambia la interfaz ("Padel Studio Premium"). El MP4 sigue en remux.js. */
 (() => {
   const $ = id => document.getElementById(id);
   const BASE = 'https://beelup-studio-api.mgcarnevali.workers.dev';
@@ -15,40 +17,42 @@
 
   const video = $('native-video');
   const stage = $('video-stage');
+  const studioParts = ['studio-editor', 'timeline', 'clip-actions', 'export'];
 
-  /* ---------------- Iconos ---------------- */
-  const shapes = {
-    play: '<path d="m8 5 12 7-12 7z"/>',
-    pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
-    back: '<path d="M11 5 4 12l7 7V5Zm9 0-7 7 7 7V5Z"/>',
-    forward: '<path d="m13 5 7 7-7 7V5ZM4 5l7 7-7 7V5Z"/>',
-    volume: '<path d="M11 5 6 9H3v6h3l5 4V5ZM15 9a5 5 0 0 1 0 6M18 6a9 9 0 0 1 0 12"/>',
-    mute: '<path d="M11 5 6 9H3v6h3l5 4V5ZM16 9l5 6m0-6-5 6"/>',
-    full: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
-    exitfull: '<path d="M3 8h5V3m8 0v5h5M8 21v-5H3m18 0h-5v5"/>',
-    in: '<path d="M5 5v14M19 6l-7 6 7 6"/>',
-    out: '<path d="M19 5v14M5 6l7 6-7 6"/>',
-    stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>'
+  /* ---------------- Iconos (sprite SVG de index.html) ---------------- */
+  const setIcon = (id, name) => {
+    const el = $(id);
+    if (el.dataset.icon === name) return;
+    const use = el.querySelector('svg use');
+    if (use) use.setAttribute('href', '#i-' + name);
+    el.dataset.icon = name;
   };
-  const icon = name => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name]}</svg>`;
-  const setIcon = (id, name) => { const el = $(id); if (el.dataset.icon !== name) { el.innerHTML = icon(name); el.dataset.icon = name; } };
-  setIcon('skip-back', 'back'); setIcon('skip-forward', 'forward'); setIcon('fullscreen', 'full');
-  setIcon('mark-in', 'in'); setIcon('mark-out', 'out'); setIcon('preview-clip', 'play');
-  setIcon('mute', 'volume'); setIcon('play-toggle', 'play');
 
   /* ---------------- Utilidades ---------------- */
-  const message = s => { $('studio-message').textContent = s; };
-  const progress = s => { $('export-status').textContent = s; };
+  const message = (s, kind = '') => { const el = $('studio-message'); el.textContent = s; el.dataset.kind = kind; };
+  // Mensaje de exportación. kind: '' (sólo lectores de pantalla), 'ok', 'err', 'info'.
+  const progress = (s, kind = '', title = '') => {
+    const p = $('export-status');
+    p.replaceChildren();
+    if (title) { const b = document.createElement('b'); b.textContent = title; p.append(b); }
+    p.append(document.createTextNode(s));
+    const card = $('export-card');
+    card.classList.remove('ok', 'err', 'info');
+    if (kind && s) card.classList.add(kind);
+    card.classList.toggle('hidden', !kind || !s);
+  };
   const fmt = value => {
     const s = Math.max(0, Math.floor(Number(value) || 0));
     return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(x => String(x).padStart(2, '0')).join(':');
   };
+  // Formato corto para etiquetas: MM:SS en partidos de menos de una hora.
+  const short = value => { const t = fmt(value); return duration < 3600 && t.startsWith('00:') ? t.slice(3) : t; };
   const seconds = text => {
     const parts = String(text).trim().split(':').map(Number);
     if (parts.length < 2 || parts.length > 3 || parts.some(x => !Number.isInteger(x) || x < 0) || parts.slice(1).some(x => x > 59)) return NaN;
     return parts.reduce((a, b) => a * 60 + b, 0);
   };
-  const mb = bytes => (bytes / 1048576).toFixed(1);
+  const mb = bytes => (bytes / 1048576).toFixed(1).replace('.', ',');
 
   async function api(path, params, signal) {
     const timeout = AbortSignal.timeout(path === '/api/segment' ? 60000 : 25000);
@@ -80,20 +84,75 @@
     return { items, time };
   }
 
+  /* ---------------- Marcador del partido ---------------- */
+  const optionText = id => { const o = $(id)?.selectedOptions?.[0]; return o && o.value ? o.textContent.trim() : ''; };
+  function fillScoreboard() {
+    if (!selection) return;
+    $('score-club').textContent = optionText('club') || selection.club;
+    $('score-court').textContent = optionText('court') || selection.court;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selection.date || '');
+    $('score-date').textContent = m ? `${m[3]}.${m[2]}.${m[1]}` : (selection.date || '—');
+    const t = optionText('time').replace(/\s+(to|a)\s+/i, ' – ');
+    $('score-time').textContent = /\d/.test(t) ? t : selection.time;
+    $('score-duration').textContent = '—';
+    $('watch-m').href = $('watch').href;
+  }
+
   /* ---------------- Recorte ---------------- */
+  function renderTc(id) {
+    const value = $(id).value;
+    const view = $(id + '-view');
+    const m = /^(00:)(\d{2}:\d{2})$/.exec(value);
+    if (m) { view.replaceChildren(Object.assign(document.createElement('i'), { textContent: m[1] }), m[2]); }
+    else view.textContent = value || '—';
+  }
   function update() {
     const a = seconds($('clip-start').value), b = seconds($('clip-end').value);
     const valid = Number.isFinite(a) && Number.isFinite(b) && a >= 0 && b <= Math.ceil(duration) && a < b;
-    for (const id of ['clip-start', 'clip-end']) $(id).toggleAttribute('aria-invalid', !valid);
+    for (const id of ['clip-start', 'clip-end']) { $(id).toggleAttribute('aria-invalid', !valid); renderTc(id); }
     $('clip-summary').textContent = valid ? `${fmt(a)} → ${fmt(b)}` : 'Ingresá un rango válido';
-    $('clip-length').textContent = valid ? fmt(b - a) : '—';
+    $('clip-length').textContent = valid ? short(b - a) : '—';
+    $('scope-clip').textContent = valid ? `${fmt(a)} → ${fmt(b)}` : 'Rango inválido';
     if (valid && duration > 0) {
       $('trim-in').value = a; $('trim-out').value = b;
-      const track = $('trim-highlight');
-      track.style.left = `${a / duration * 100}%`;
-      track.style.width = `${Math.min(b - a, duration - a) / duration * 100}%`;
+      const left = a / duration * 100, width = Math.min(b - a, duration - a) / duration * 100;
+      const hl = $('trim-highlight');
+      hl.style.left = `${left}%`;
+      hl.style.width = `${width}%`;
+      $('seek-range').style.left = `${left}%`;
+      $('seek-range').style.width = `${width}%`;
+      $('fl-in').textContent = short(a); $('fl-out').textContent = short(b);
+      // Etiquetas de inicio y fin: se separan cuando el recorte es corto.
+      const narrow = $('trim-track').clientWidth * width / 100 < 150;
+      hl.querySelector('.fl-a').classList.toggle('near-a', narrow);
+      hl.querySelector('.fl-b').classList.toggle('near-b', narrow);
     }
     return valid ? { a, b } : null;
+  }
+
+  function renderRuler() {
+    const ruler = $('tl-ruler');
+    ruler.replaceChildren();
+    if (!duration) return;
+    const min = duration / 60;
+    const minor = min <= 70 ? 1 : min <= 150 ? 5 : 10;
+    const major = min <= 12 ? 2 : min <= 70 ? 5 : min <= 150 ? 15 : 30;
+    const frag = document.createDocumentFragment();
+    for (let m = 0; m * 60 <= duration; m += minor) {
+      const x = m * 60 / duration * 100;
+      const tick = document.createElement('span');
+      tick.className = 'tick' + (m % major === 0 ? ' major' : '');
+      tick.style.left = x + '%';
+      frag.append(tick);
+      if (m % major === 0 && x < 97) {
+        const label = document.createElement('span');
+        label.className = 'tlabel' + (m === 0 ? ' first' : '');
+        label.style.left = x + '%';
+        label.textContent = short(m * 60);
+        frag.append(label);
+      }
+    }
+    ruler.append(frag);
   }
 
   function suggestedName() {
@@ -106,6 +165,19 @@
     let base = ($('export-name').value || suggestedName()).replace(/\.(mp4|ts)$/i, '').replace(/[\\/:*?"<>|\x00-\x1f]/g, '-').trim().replace(/[. ]+$/, '');
     if (!base) base = 'Mi partido';
     return (base + (full ? ' - completo' : ` - ${fmt(a).replaceAll(':', '-')} a ${fmt(b).replaceAll(':', '-')}`)).slice(0, 195) + '.' + ext;
+  }
+  // Vista del nombre en móvil: hasta tres líneas, sin cortar fechas ni horas en el guion.
+  function renderName() {
+    const view = $('export-name-view');
+    const text = $('export-name').value || $('export-name').placeholder;
+    const parts = text.split(' - ');
+    view.replaceChildren();
+    parts.forEach((part, i) => {
+      const span = document.createElement('span');
+      span.textContent = part + (i < parts.length - 1 ? ' -' : '');
+      if (!/\s/.test(part)) span.className = 'w';
+      view.append(span, i < parts.length - 1 ? ' ' : '');
+    });
   }
 
   /* ---------------- Reproductor ---------------- */
@@ -120,10 +192,13 @@
     $('play-toggle').setAttribute('aria-label', video.paused ? 'Reproducir' : 'Pausar');
     const total = duration || video.duration || 0;
     const shown = seekDragging ? Number($('seek').value) : (video.currentTime || 0);
-    $('play-clock').textContent = `${fmt(shown)} / ${fmt(total)}`;
+    const clock = $('play-clock');
+    clock.replaceChildren(fmt(shown) + ' ', Object.assign(document.createElement('span'), { className: 'tot', textContent: '/ ' + fmt(total) }));
     if (!seekDragging) $('seek').value = video.currentTime || 0;
     const pct = total ? Math.min(100, shown / total * 100) : 0;
     $('seek').style.setProperty('--progress', pct + '%');
+    $('tl-cursor').style.left = pct + '%';
+    $('tl-played').style.width = pct + '%';
     setIcon('mute', video.muted || video.volume === 0 ? 'mute' : 'volume');
     $('volume').value = video.muted ? 0 : video.volume;
     const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -135,19 +210,25 @@
     if (!previewing) return;
     previewing = false;
     setIcon('preview-clip', 'play');
+    $('preview-clip').classList.remove('on');
+    $('preview-clip').querySelector('.pv-label').textContent = 'Vista previa';
     $('preview-clip').setAttribute('aria-label', 'Reproducir recorte');
+  }
+
+  function showStudio(on) {
+    $('player-controls').classList.toggle('hidden', !on);
+    for (const id of studioParts) $(id).classList.toggle('hidden', !on);
   }
 
   function clear() {
     stopPreview();
-    $('player-controls').classList.add('hidden');
+    showStudio(false);
     stage.classList.remove('buffering', 'controls-idle');
     if (hls) { hls.destroy(); hls = null; }
     if (playlistBlob) { URL.revokeObjectURL(playlistBlob); playlistBlob = null; }
     video.removeAttribute('src');
     video.load();
     segments = []; duration = 0; nativeFallbackTried = false;
-    $('studio-editor').classList.add('hidden');
   }
 
   function makePlayer(txt) {
@@ -162,13 +243,13 @@
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (!data.fatal) return;
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          message('Conexión inestable: reintentando la carga del video…');
+          message('Conexión inestable: reintentando la carga del video…', 'warn');
           setTimeout(() => hls && hls.startLoad(), 1500);
         } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 3) {
           mediaRecoveries++;
           hls.recoverMediaError();
         } else {
-          message('Error del reproductor: ' + data.details + '. Podés reintentar o descargar el video.');
+          message('Error del reproductor: ' + data.details + '. Podés reintentar o descargar el video.', 'err');
           $('player-error').classList.remove('hidden');
         }
       });
@@ -178,7 +259,7 @@
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = playlistBlob;
     } else {
-      message('Este navegador no admite HLS; la exportación puede seguir disponible.');
+      message('Este navegador no admite HLS; la exportación puede seguir disponible.', 'warn');
     }
   }
 
@@ -206,24 +287,27 @@
       segments = parsed.items; duration = parsed.time;
       makePlayer(txt);
       $('video-duration').textContent = 'Duración: ' + fmt(duration);
-      $('player-controls').classList.remove('hidden');
+      $('score-duration').textContent = short(duration);
+      $('scope-full').textContent = fmt(duration);
       $('seek').max = duration;
       $('clip-start').value = '00:00:00';
       $('clip-end').value = fmt(Math.min(300, duration));
-      $('studio-editor').classList.remove('hidden');
+      showStudio(true);
       $('trim-in').max = Math.floor(duration); $('trim-out').max = Math.floor(duration);
       $('trim-in').value = 0; $('trim-out').value = Math.floor(Math.min(300, duration));
       $('export-name').value = suggestedName();
+      renderName();
       $('video-placeholder').classList.add('hidden');
       $('player-error').classList.add('hidden');
       progress('');
       showControls();
       message('Video listo. Elegí el fragmento o descargá el partido completo.');
-      update(); syncPlayer();
+      renderRuler(); update(); syncPlayer();
     } catch (e) {
       if (version !== loadVersion) return;
       const text = e.status === 403 ? 'Este partido requiere acceso en Beelup.' : e.message;
-      message('No se pudo cargar el video: ' + text);
+      message('No se pudo cargar el video: ' + text, 'err');
+      $('video-placeholder').textContent = 'No se pudo cargar el video';
       $('player-error').classList.remove('hidden');
       console.warn(e);
     }
@@ -233,12 +317,16 @@
     if (exportAbort) exportAbort.abort();
     selection = e.detail; loadVersion++;
     clear();
+    fillScoreboard();
+    document.body.classList.remove('finder-open');
+    $('open-finder').setAttribute('aria-expanded', 'false');
+    $('video-placeholder').textContent = 'Cargando video…';
     $('video-placeholder').classList.remove('hidden');
     $('player-error').classList.add('hidden');
     message('Cargando video…');
     loadVideo();
   });
-  $('retry-video').addEventListener('click', () => { loadVersion++; loadVideo(); });
+  $('retry-video').addEventListener('click', () => { loadVersion++; $('video-placeholder').textContent = 'Cargando video…'; loadVideo(); });
 
   /* ---------------- Controles ---------------- */
   const togglePlay = () => (video.paused || video.ended ? video.play().catch(() => {}) : video.pause());
@@ -261,12 +349,29 @@
   // Clic/tap sobre la imagen: con mouse alterna reproducción; con el dedo,
   // si los controles están ocultos primero los muestra.
   let pointerTypeDown = 'mouse', idleAtDown = false;
-  video.addEventListener('pointerdown', e => { pointerTypeDown = e.pointerType; idleAtDown = stage.classList.contains('controls-idle'); }, { capture: true });
-  video.addEventListener('click', () => {
+  let swallowClick = false;
+  stage.addEventListener('pointerdown', e => {
+    pointerTypeDown = e.pointerType; idleAtDown = stage.classList.contains('controls-idle');
+    // Con el dedo y los controles ocultos, el toque sólo los muestra: el clic que
+    // le sigue no debe activar el botón que aparece debajo del dedo.
+    swallowClick = e.pointerType !== 'mouse' && idleAtDown;
+  }, { capture: true });
+  stage.addEventListener('click', e => {
+    if (!swallowClick) return;
+    swallowClick = false;
+    e.preventDefault(); e.stopPropagation();
+    showControls();
+  }, { capture: true });
+  const onSurfaceClick = e => {
     if (!duration) return;
+    if (e.target.closest('button, input, select')) return;
     if (pointerTypeDown !== 'mouse' && idleAtDown) { showControls(); return; }
+    // En móvil, tocar la imagen con los controles visibles los oculta (como un reproductor nativo).
+    if (pointerTypeDown !== 'mouse' && e.target !== video) { if (!video.paused) stage.classList.add('controls-idle'); return; }
     togglePlay();
-  });
+  };
+  video.addEventListener('click', onSurfaceClick);
+  $('player-controls').addEventListener('click', e => { if (e.target === $('player-controls') || e.target.classList.contains('ctl-center') || e.target.classList.contains('ctl-bottom')) onSurfaceClick(e); });
   video.addEventListener('dblclick', () => { if (pointerTypeDown === 'mouse') toggleFullscreen(); });
 
   $('play-toggle').addEventListener('click', togglePlay);
@@ -287,7 +392,8 @@
 
   $('volume').addEventListener('input', () => { video.volume = Number($('volume').value); video.muted = video.volume === 0; syncPlayer(); });
   $('mute').addEventListener('click', () => { video.muted = !video.muted; if (!video.muted && video.volume === 0) video.volume = 1; syncPlayer(); });
-  $('speed').addEventListener('change', () => { video.playbackRate = Number($('speed').value); });
+  // defaultPlaybackRate se conserva al recargar el video (video.load()).
+  $('speed').addEventListener('change', () => { video.defaultPlaybackRate = video.playbackRate = Number($('speed').value); });
   video.addEventListener('loadedmetadata', () => { video.playbackRate = Number($('speed').value); });
 
   function toggleFullscreen() {
@@ -324,15 +430,39 @@
   for (const id of ['clip-start', 'clip-end']) {
     $(id).addEventListener('input', update);
     $(id).addEventListener('blur', () => { const v = seconds($(id).value); if (Number.isFinite(v)) $(id).value = fmt(v); update(); });
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   }
-  for (const [slider, field, other] of [['trim-in', 'clip-start', 'clip-end'], ['trim-out', 'clip-end', 'clip-start']]) {
-    $(slider).addEventListener('input', () => {
-      let v = Number($(slider).value);
-      let o = seconds($(other).value);
-      if (!Number.isFinite(o)) o = slider === 'trim-in' ? Math.floor(duration) : 0;
-      v = slider === 'trim-in' ? Math.min(v, o - 1) : Math.max(v, o + 1);
-      $(field).value = fmt(Math.max(0, Math.min(v, Math.floor(duration))));
-      update();
+  // Aplica un valor al inicio o al fin respetando un segundo de separación (como la v1.2).
+  function setTrim(which, value) {
+    const field = which === 'in' ? 'clip-start' : 'clip-end';
+    const other = which === 'in' ? 'clip-end' : 'clip-start';
+    let v = Math.round(value);
+    let o = seconds($(other).value);
+    if (!Number.isFinite(o)) o = which === 'in' ? Math.floor(duration) : 0;
+    v = which === 'in' ? Math.min(v, o - 1) : Math.max(v, o + 1);
+    $(field).value = fmt(Math.max(0, Math.min(v, Math.floor(duration))));
+    update();
+  }
+  for (const [slider, which] of [['trim-in', 'in'], ['trim-out', 'out']]) {
+    $(slider).addEventListener('input', () => setTrim(which, Number($(slider).value)));
+    const hd = $(which === 'in' ? 'hd-in' : 'hd-out');
+    $(slider).addEventListener('focus', () => hd.classList.add('kfocus'));
+    $(slider).addEventListener('blur', () => hd.classList.remove('kfocus'));
+  }
+  // Tiradores de la línea de tiempo: arrastre con mouse o dedo.
+  for (const [id, which] of [['hd-in', 'in'], ['hd-out', 'out']]) {
+    const hd = $(id);
+    hd.addEventListener('pointerdown', e => {
+      if (!duration) return;
+      e.preventDefault(); e.stopPropagation();
+      hd.setPointerCapture(e.pointerId);
+      hd.classList.add('active');
+      const rect = $('trim-track').getBoundingClientRect();
+      const move = ev => setTrim(which, (ev.clientX - rect.left) / rect.width * duration);
+      const up = () => { hd.classList.remove('active'); hd.removeEventListener('pointermove', move); hd.removeEventListener('pointerup', up); hd.removeEventListener('pointercancel', up); };
+      hd.addEventListener('pointermove', move);
+      hd.addEventListener('pointerup', up);
+      hd.addEventListener('pointercancel', up);
     });
   }
   function mark(which) {
@@ -353,17 +483,62 @@
   $('preview-clip').addEventListener('click', () => {
     if (previewing) { stopPreview(); video.pause(); return; }
     const r = update();
-    if (!r) { progress('Seleccioná un recorte válido.'); return; }
+    if (!r) { progress('Seleccioná un recorte válido.', 'err'); return; }
     previewing = true;
     video.currentTime = r.a;
     video.play().catch(() => {});
     setIcon('preview-clip', 'stop');
+    $('preview-clip').classList.add('on');
+    $('preview-clip').querySelector('.pv-label').textContent = 'Detener';
     $('preview-clip').setAttribute('aria-label', 'Detener vista previa');
   });
 
-  /* ---------------- Exportación ---------------- */
-  const exportButtons = ['download-clip', 'download-full', 'download-mp4', 'download-full-mp4'].map($).filter(Boolean);
+  /* ---------------- Formato, alcance y botón de descarga ---------------- */
+  const mode = () => ({
+    mp4: document.querySelector('input[name=format]:checked').value === 'mp4',
+    full: document.querySelector('input[name=scope]:checked').value === 'full'
+  });
+  function setDownloadLabel(title, sub = '') {
+    for (const layer of document.querySelectorAll('#download .dl-layer')) {
+      layer.querySelector('.dl-title').textContent = title;
+      layer.querySelector('.dl-sub').textContent = sub;
+    }
+    $('download').setAttribute('aria-label', sub ? `${title}, ${sub}` : title);
+  }
+  function syncMode(fromSelect = false) {
+    if (fromSelect) {
+      const [f, s] = $('export-mode').value.split('-');
+      document.querySelector(`input[name=format][value=${f}]`).checked = true;
+      document.querySelector(`input[name=scope][value=${s === 'full' ? 'full' : 'clip'}]`).checked = true;
+    }
+    const m = mode();
+    $('export-mode').value = `${m.mp4 ? 'mp4' : 'ts'}-${m.full ? 'full' : 'clip'}`;
+    $('mode-format').textContent = m.mp4 ? 'MP4' : 'TS';
+    $('mode-scope').textContent = m.full ? 'Completo' : 'Recorte';
+    $('export-ext').textContent = m.mp4 ? '.mp4' : '.ts';
+    if (!busy) setDownloadLabel(`Descargar ${m.full ? 'partido completo' : 'recorte'} ${m.mp4 ? 'MP4' : '.ts'}`);
+  }
+  for (const input of document.querySelectorAll('input[name=format], input[name=scope]')) input.addEventListener('change', () => syncMode());
+  $('export-mode').addEventListener('change', () => syncMode(true));
+  $('export-name').addEventListener('input', renderName);
+  $('export-name').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+  function setBusy(on) {
+    busy = on;
+    $('dl').classList.toggle('busy', on);
+    $('download').disabled = on;
+    $('cancel-export').classList.toggle('hidden', !on);
+    for (const el of document.querySelectorAll('input[name=format], input[name=scope], #export-mode')) el.disabled = on;
+    $('download').style.setProperty('--p', '0%');
+    if (!on) syncMode();
+  }
+  function setDownloadProgress(fraction, title, sub) {
+    const pct = Math.max(0, Math.min(100, fraction * 100));
+    $('download').style.setProperty('--p', pct.toFixed(1) + '%');
+    $('export-progress').value = Math.round(pct);
+    setDownloadLabel(title, sub);
+  }
 
+  /* ---------------- Exportación ---------------- */
   // Descarga los segmentos con algunas peticiones en paralelo y reintentos,
   // entregándolos en orden a `consume`.
   async function fetchSegments(list, signal, consume) {
@@ -410,23 +585,20 @@
     if (busy || !segments.length) return;
     const a = full ? 0 : seconds($('clip-start').value);
     const b = full ? duration : seconds($('clip-end').value);
-    if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b > Math.ceil(duration) + 0.1 || a >= b) { progress('Inicio y fin inválidos.'); return; }
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b > Math.ceil(duration) + 0.1 || a >= b) { progress('Inicio y fin inválidos.', 'err'); return; }
     // Para MP4 se toma un segmento extra antes del inicio (margen de cuadro clave).
     const from = mp4 && !full ? Math.max(0, a - START_PREROLL) : a;
     const chosen = segments.filter(s => s.end > from && s.start < b);
-    if (!chosen.length) { progress('El rango elegido no contiene video.'); return; }
+    if (!chosen.length) { progress('El rango elegido no contiene video.', 'err'); return; }
     const approx = chosen.at(-1).end - chosen[0].start;
     if (!full && approx > 600 && !confirm('El fragmento supera 10 minutos y puede consumir muchos datos y memoria. ¿Continuar?')) return;
     if (full && !confirm('Un partido completo puede superar la memoria del navegador y consumir muchos datos. ¿Continuar?')) return;
 
-    busy = true;
     exportAbort = new AbortController();
     const signal = exportAbort.signal;
-    for (const btn of exportButtons) btn.disabled = true;
-    $('cancel-export').classList.remove('hidden');
-    $('export-progress').classList.remove('hidden');
-    $('export-progress').value = 0;
-    const details = $('download-clip').closest('details'); if (details) details.open = false;
+    setBusy(true);
+    progress('');
+    setDownloadProgress(0, 'Descargando', `0/${chosen.length} · 0%`);
     try {
       let bytes = 0, blob;
       const remuxer = mp4 ? new BeelupMp4.Mp4Remuxer() : null;
@@ -440,10 +612,12 @@
         } else {
           pieces.push(new Blob([buf], { type: 'video/mp2t' }));
         }
-        $('export-progress').value = Math.round((i + 1) / chosen.length * 100);
+        const frac = (i + 1) / chosen.length;
+        setDownloadProgress(frac, 'Descargando', `${i + 1}/${chosen.length} · ${Math.round(frac * 100)}%`);
         progress(`Descargando segmentos ${i + 1}/${chosen.length} · ${mb(bytes)} MB…`);
       });
       if (mp4) {
+        setDownloadProgress(1, 'Armando MP4', 'sin recodificar');
         progress('Armando MP4 (sin recodificar)…');
         await new Promise(r => setTimeout(r, 0));
         const result = remuxer.finalize(full ? {} : { start: a - START_PREROLL, end: b });
@@ -451,28 +625,66 @@
         if (blob.size < 1024) throw Error('MP4 vacío.');
         saveBlob(blob, downloadName(full, a, b, 'mp4'));
         const note = full ? '' : ' Empieza en el cuadro clave anterior al inicio elegido.';
-        progress(`Archivo MP4 generado (${mb(blob.size)} MB, ${fmt(Math.round(result.duration))}). Video H.264 y audio AAC originales, con índice para adelantar y retroceder.${note}`);
+        progress(`Video H.264 y audio AAC originales, con índice para adelantar y retroceder.${note}`, 'ok', `MP4 generado · ${mb(blob.size)} MB · ${fmt(Math.round(result.duration))}`);
       } else {
         blob = new Blob(pieces, { type: 'video/mp2t' });
         saveBlob(blob, downloadName(full, a, b, 'ts'));
-        progress(`Archivo TS generado (${mb(blob.size)} MB). El recorte se ajusta a segmentos HLS.`);
+        progress('El recorte se ajusta a segmentos HLS.', 'ok', `Archivo TS generado · ${mb(blob.size)} MB`);
       }
     } catch (e) {
-      if (signal.aborted) progress('Descarga cancelada.');
-      else { progress('Error en descarga: ' + e.message); console.warn(e); }
+      if (signal.aborted) progress('La descarga se detuvo antes de terminar.', 'info', 'Descarga cancelada');
+      else { progress(e.message, 'err', 'Error en descarga'); console.warn(e); }
     } finally {
-      busy = false; exportAbort = null;
-      for (const btn of exportButtons) btn.disabled = false;
-      $('cancel-export').classList.add('hidden');
-      $('export-progress').classList.add('hidden');
+      exportAbort = null;
+      setBusy(false);
     }
   }
 
   $('cancel-export').addEventListener('click', () => exportAbort && exportAbort.abort());
-  $('download-mp4').addEventListener('click', () => exportVideo(false, true));
-  $('download-full-mp4')?.addEventListener('click', () => exportVideo(true, true));
-  $('download-clip').addEventListener('click', () => exportVideo(false));
-  $('download-full').addEventListener('click', () => exportVideo(true));
+  $('download').addEventListener('click', () => { const m = mode(); exportVideo(m.full, m.mp4); });
+
+  /* ---------------- Buscador (presentación) ---------------- */
+  // app.js maneja la búsqueda; aquí sólo se adapta la presentación.
+  const result = $('result');
+  const syncHasMatch = () => {
+    const has = !result.classList.contains('hidden');
+    document.body.classList.toggle('has-match', has);
+    $('open-finder').classList.toggle('hidden', !has);
+    $('watch-m').classList.toggle('hidden', !has);
+    if (!has) document.body.classList.remove('finder-open');
+  };
+  new MutationObserver(syncHasMatch).observe(result, { attributes: true, attributeFilter: ['class'] });
+  $('open-finder').addEventListener('click', () => {
+    const open = document.body.classList.toggle('finder-open');
+    $('open-finder').setAttribute('aria-expanded', String(open));
+    if (open) $('explorar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  // Horarios como botones en móvil (reflejan el <select id="time">).
+  const timeSel = $('time');
+  function renderTimeChips() {
+    const box = $('time-chips');
+    const opts = [...timeSel.options].filter(o => o.value);
+    box.replaceChildren();
+    const wrap = timeSel.closest('.pk-time');
+    wrap.classList.toggle('has-chips', opts.length > 0 && !timeSel.disabled);
+    wrap.querySelector('.pk-body').dataset.label = timeSel.value ? timeSel.selectedOptions[0].textContent.replace(/\s+to\s+/i, ' a ') : 'Elegí un horario';
+    for (const o of opts) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip-t';
+      b.textContent = o.value;
+      b.setAttribute('aria-label', o.textContent.replace(/\s+to\s+/i, ' a '));
+      b.setAttribute('aria-pressed', String(o.value === timeSel.value));
+      b.addEventListener('click', () => { timeSel.value = o.value; timeSel.dispatchEvent(new Event('change', { bubbles: true })); renderTimeChips(); });
+      box.append(b);
+    }
+    const on = box.querySelector('[aria-pressed="true"]');
+    if (on) box.scrollTop = on.offsetTop - box.clientHeight / 2 + on.offsetHeight / 2;
+  }
+  new MutationObserver(renderTimeChips).observe(timeSel, { childList: true, attributes: true, attributeFilter: ['disabled'] });
+  timeSel.addEventListener('change', renderTimeChips);
+
+  window.addEventListener('resize', () => { if (duration) update(); });
+  syncMode();
 
   // Exponer para pruebas automatizadas.
   window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; } };

@@ -231,6 +231,58 @@
     segments = []; duration = 0; nativeFallbackTried = false;
   }
 
+  /* Playlist para el reproductor (no para exportar).
+     Beelup cierra cada archivo de 5 min con un segmento de 0,0x s sin audio ni video, justo antes de
+     #EXT-X-DISCONTINUITY. Al saltar al borde de un archivo, hls.js marca ese segmento como hueco y puede
+     dejar de pedir el siguiente, y el video queda «buscando». Aquí se quitan sólo los segmentos que se
+     verifican vacíos (sin ningún paquete de audio ni de video) y su duración se suma al segmento
+     anterior, de modo que los tiempos de todos los demás segmentos y la duración total no cambian.
+     La exportación sigue usando la playlist original. */
+  const EMPTY_SEG_MAX = 0.2; // s: sólo se analizan segmentos así de cortos
+  let playerPlaylistInfo = null;
+  async function playerPlaylist(txt) {
+    const rows = txt.split(/\r?\n/);
+    const segs = []; // {inf, uri, d, url}
+    for (let i = 0; i < rows.length; i++) {
+      if (!rows[i].startsWith('#EXTINF:')) continue;
+      let u = i + 1;
+      while (u < rows.length && (!rows[u].trim() || rows[u].startsWith('#'))) u++;
+      if (u >= rows.length) break;
+      segs.push({ inf: i, uri: u, d: Number(rows[i].slice(8).split(',')[0]), url: rows[u].trim() });
+      i = u;
+    }
+    const nextTag = s => { for (let k = s.uri + 1; k < rows.length; k++) if (rows[k].trim()) return rows[k]; return '#EXT-X-ENDLIST'; };
+    const candidates = segs.filter((s, k) => k > 0 && s.d > 0 && s.d <= EMPTY_SEG_MAX && /^#EXT-X-(DISCONTINUITY|ENDLIST)\b/.test(nextTag(s)));
+    // Verificación real del contenido (cada uno pesa unos cientos de bytes).
+    const isEmpty = async seg => {
+      try {
+        const buf = await (await api('/api/segment', { url: seg.url }, AbortSignal.timeout(6000))).arrayBuffer();
+        const st = { pmtPid: null, videoPid: null, audioPid: null, unsupported: null };
+        const pes = BeelupMp4._internal.demuxTs(new Uint8Array(buf), st);
+        return pes.video.length === 0 && pes.audio.length === 0;
+      } catch { return false; } // ante cualquier duda, se conserva
+    };
+    const checks = candidates.length <= 60 ? await Promise.all(candidates.map(isEmpty)) : candidates.map(() => false);
+    const drop = new Set(candidates.filter((_, k) => checks[k]));
+    const removeRows = new Set();
+    let lastKept = null;
+    const durations = new Map(segs.map(s => [s, s.d]));
+    for (const s of segs) {
+      if (drop.has(s) && lastKept) {
+        durations.set(lastKept, durations.get(lastKept) + s.d);
+        removeRows.add(s.inf); removeRows.add(s.uri);
+      } else lastKept = s;
+    }
+    const out = rows.map((row, i) => {
+      if (removeRows.has(i)) return null;
+      const s = segs.find(x => x.inf === i);
+      if (s && durations.get(s) !== s.d) return '#EXTINF:' + Number(durations.get(s).toFixed(6)) + row.slice(8).replace(/^[^,]*/, '');
+      return row;
+    }).filter(r => r !== null);
+    playerPlaylistInfo = { candidates: candidates.map(s => ({ url: s.url, d: s.d })), removed: [...drop].map(s => ({ url: s.url, d: s.d })) };
+    return out.join('\n');
+  }
+
   function makePlayer(txt) {
     const proxied = txt.split(/\r?\n/).map(line => line && !line.startsWith('#') ? BASE + '/api/segment?' + new URLSearchParams({ url: line.trim() }) : line).join('\n');
     playlistBlob = URL.createObjectURL(new Blob([proxied], { type: 'application/vnd.apple.mpegurl' }));
@@ -283,9 +335,11 @@
       if (version !== loadVersion) return;
       if (!txt.startsWith('#EXTM3U')) throw Error('No se recibió una playlist HLS.');
       const parsed = parsePlaylist(txt);
+      const playerTxt = await playerPlaylist(txt);
+      if (version !== loadVersion) return;
       playlistId = resolved.id;
       segments = parsed.items; duration = parsed.time;
-      makePlayer(txt);
+      makePlayer(playerTxt);
       $('video-duration').textContent = 'Duración: ' + fmt(duration);
       $('score-duration').textContent = short(duration);
       $('scope-full').textContent = fmt(duration);
@@ -822,5 +876,5 @@
   syncMode();
 
   // Exponer para pruebas automatizadas.
-  window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; }, get shareClip() { return shareClip; }, phrases: PHRASES };
+  window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; }, get shareClip() { return shareClip; }, get playerPlaylistInfo() { return playerPlaylistInfo; }, phrases: PHRASES };
 })();

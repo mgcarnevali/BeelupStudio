@@ -1,5 +1,5 @@
 // Versión de prueba en /v14-test/: caché propia; sólo limpia sus propias cachés.
-const CACHE = 'beelup-studio-v14-test-6';
+const CACHE = 'beelup-studio-v14-test-7';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './studio.js', './remux.js', './icon.svg', './manifest.webmanifest',
   './fonts/inter-var.woff2', './fonts/barlow-condensed-500.woff2', './fonts/barlow-condensed-600.woff2', './fonts/barlow-condensed-700.woff2',
   './fonts/jbmono-400.woff2', './fonts/jbmono-500.woff2'];

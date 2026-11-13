@@ -531,7 +531,10 @@
       hd.setPointerCapture(e.pointerId);
       hd.classList.add('active');
       const rect = $('trim-track').getBoundingClientRect();
-      const move = ev => setTrim(which, (ev.clientX - rect.left) / rect.width * duration);
+      // Se recuerda dónde se agarró el asa respecto de su tiempo exacto, para que no salte al empezar.
+      const current = seconds($(which === 'in' ? 'clip-start' : 'clip-end').value);
+      const offset = Number.isFinite(current) ? e.clientX - (rect.left + current / duration * rect.width) : 0;
+      const move = ev => setTrim(which, (ev.clientX - offset - rect.left) / rect.width * duration);
       const up = () => { hd.classList.remove('active'); hd.removeEventListener('pointermove', move); hd.removeEventListener('pointerup', up); hd.removeEventListener('pointercancel', up); };
       hd.addEventListener('pointermove', move);
       hd.addEventListener('pointerup', up);

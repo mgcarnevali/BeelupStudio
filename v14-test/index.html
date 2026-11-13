@@ -10,7 +10,7 @@
 <link rel="preload" href="./fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
 <title>Beelup Studio v1.4.2 (prueba)</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="./style.css?v=141t9">
+<link rel="stylesheet" href="./style.css?v=141t10">
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -88,7 +88,7 @@
     function fit() {
       const cw = box.clientWidth;
       const [name, w] = innerWidth >= 1100 ? ['pc', 1180] : cw >= 600 ? ['tablet', 768] : ['movil', 412];
-      const src = 'editor-demo-' + name + '.html?v=141t9';
+      const src = 'editor-demo-' + name + '.html?v=141t10';
       if (!frame.src.endsWith(src)) { frame.src = src; return; }
       const scale = cw / w;
       frame.style.width = w + 'px';
@@ -225,7 +225,7 @@
   </div>
  </main>
 
- <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.2 · prueba 9</span></footer>
+ <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.2 · prueba 10</span></footer>
 </div>
 <dialog id="bardo" class="bardo" aria-labelledby="bardo-title">
  <form method="dialog" class="bardo-inner">
@@ -245,9 +245,9 @@
  </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js" defer></script>
-<script src="./app.js?v=141t9" defer></script>
-<script src="./remux.js?v=141t9" defer></script>
-<script src="./studio.js?v=141t9" defer></script>
-<script src="./picker.js?v=141t9" defer></script>
+<script src="./app.js?v=141t10" defer></script>
+<script src="./remux.js?v=141t10" defer></script>
+<script src="./studio.js?v=141t10" defer></script>
+<script src="./picker.js?v=141t10" defer></script>
 </body>
 </html>

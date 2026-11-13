@@ -126,8 +126,26 @@
       const narrow = $('trim-track').clientWidth * width / 100 < 150;
       hl.querySelector('.fl-a').classList.toggle('near-a', narrow);
       hl.querySelector('.fl-b').classList.toggle('near-b', narrow);
+      placeLabels(); requestAnimationFrame(placeLabels);
     }
     return valid ? { a, b } : null;
+  }
+
+  // Etiquetas INICIO/FIN: no se cortan en los bordes de la línea de tiempo ni se pisan entre sí.
+  // Sólo mueve los textos; los marcadores, sus valores y su comportamiento no cambian.
+  function placeLabels() {
+    const track = $('trim-track'), a = track.querySelector('.fl-a'), b = track.querySelector('.fl-b');
+    a.style.marginLeft = b.style.marginLeft = '';
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), t = track.getBoundingClientRect();
+    if (!ra.width || !rb.width || !t.width) return;   // ocultas (móvil) o editor sin mostrar
+    const fit = r => Math.max(t.left - r.left, Math.min(0, t.right - r.right));
+    let da = fit(ra), db = fit(rb);
+    const overlap = ra.right + da + 10 - (rb.left + db);
+    if (overlap > 0) {
+      const push = Math.min(overlap, Math.max(0, t.right - (rb.right + db)));
+      db += push; da -= overlap - push;
+    }
+    a.style.marginLeft = da + 'px'; b.style.marginLeft = db + 'px';
   }
 
   function renderRuler() {

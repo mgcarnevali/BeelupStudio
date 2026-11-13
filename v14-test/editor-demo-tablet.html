@@ -1,0 +1,138 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vista previa del editor</title><meta name="robots" content="noindex"><link rel="stylesheet" href="./style.css?v=141t9">
+<style>html,body{background:transparent!important;overflow:hidden}.video-stage .demo-still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}*{pointer-events:none!important}</style></head>
+<body class="has-match" inert><svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+ <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></symbol>
+ <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7" y="5" width="3.4" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="13.6" y="5" width="3.4" height="14" rx="1" fill="currentColor" stroke="none"/></symbol>
+ <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" stroke="none"/></symbol>
+ <symbol id="i-back10" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v3.8h3.8"/><text x="12" y="15.3" font-size="7.2" font-family="Inter,sans-serif" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">10</text></symbol>
+ <symbol id="i-fwd10" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v3.8h-3.8"/><text x="12" y="15.3" font-size="7.2" font-family="Inter,sans-serif" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">10</text></symbol>
+ <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.4a8 8 0 0 1 0 11.2"/></symbol>
+ <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="m16 9.5 5 5m0-5-5 5"/></symbol>
+ <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+ <symbol id="i-exitfull" viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></symbol>
+ <symbol id="i-markin" viewBox="0 0 24 24"><path d="M6 4v16M6 4h3M6 20h3"/><path d="M19 12h-9M13.5 8.5 10 12l3.5 3.5"/></symbol>
+ <symbol id="i-markout" viewBox="0 0 24 24"><path d="M18 4v16M18 4h-3M18 20h-3"/><path d="M5 12h9M10.5 8.5 14 12l-3.5 3.5"/></symbol>
+ <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+ <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+ <symbol id="i-chevron-r" viewBox="0 0 24 24"><path d="m10 7 5 5-5 5"/></symbol>
+ <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8"/><path d="M17 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 4 18.5v-10A1.5 1.5 0 0 1 5.5 7H10"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+ <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.3" r=".6" fill="currentColor"/></symbol>
+ <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+ <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+ <symbol id="i-court" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="1.5"/><path d="M5 12h14M12 7v10M5 7h14M5 17h14"/></symbol>
+ <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+ <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></symbol>
+ <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.4 2.3 3.6 5 3.6 8s-1.2 5.7-3.6 8c-2.4-2.3-3.6-5-3.6-8S9.6 6.3 12 4z"/></symbol>
+ <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3.5c2 0 3.2 1 4.3 2.7l1.4 2.2M4 17h3.5c2 0 3.2-1 4.3-2.7"/><path d="M14.6 14.3c1.1 1.7 2.3 2.7 4.3 2.7H20M15 7h5M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M15.5 8.5V6.2A1.7 1.7 0 0 0 13.8 4.5H6.2A1.7 1.7 0 0 0 4.5 6.2v7.6a1.7 1.7 0 0 0 1.7 1.7h2.3"/></symbol>
+ <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 7.5 12 3.5l4 4"/><path d="M8.5 10.5H7A2.5 2.5 0 0 0 4.5 13v5A2.5 2.5 0 0 0 7 20.5h10a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-1.5"/></symbol>
+ <symbol id="i-retry" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
+</svg><div class="app"><main class="studio"><div class="studio-grid">
+   <div class="video-stage" id="video-stage" tabindex="0">
+    <img class="demo-still" src="./home-partido-1280.webp" srcset="./home-partido-640.webp 640w, ./home-partido-960.webp 960w, ./home-partido-1280.webp 1280w" sizes="700px" alt="">
+    <div id="video-placeholder" class="video-placeholder hidden">Cargando video…</div>
+    <div class="player-spinner" aria-hidden="true"></div>
+    <div id="player-controls" class="player-controls">
+     <div class="ctl-center">
+      <button tabindex="-1" id="skip-back" class="cb" type="button" aria-label="Retroceder 10 segundos"><svg class="i"><use href="#i-back10"></use></svg></button>
+      <button tabindex="-1" id="play-toggle" class="cb cb-play" type="button" aria-label="Reproducir" data-icon="play"><svg class="i"><use href="#i-play"></use></svg></button>
+      <button tabindex="-1" id="skip-forward" class="cb" type="button" aria-label="Avanzar 10 segundos"><svg class="i"><use href="#i-fwd10"></use></svg></button>
+     </div>
+     <div class="ctl-bottom">
+      <div class="player-seek"><span id="seek-range" class="seek-range" style="left: 0%; width: 9.99394%;"></span><input id="seek" type="range" min="0" max="3001.8199999999997" value="0" step="0.1" aria-label="Posición del video" style="--progress: 0%;"></div>
+      <div class="ctl-row">
+       <span id="play-clock" class="play-clock">00:00:00 <span class="tot">/ 00:50:01</span></span>
+       <span class="ctl-sp"></span>
+       <button tabindex="-1" id="mute" class="cb sound-button" type="button" aria-label="Silenciar" data-icon="volume"><svg class="i"><use href="#i-volume"></use></svg></button>
+       <input id="volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volumen">
+       <select tabindex="-1" id="speed" aria-label="Velocidad"><option value="0.5">0.5×</option><option value="1" selected="">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+       <button tabindex="-1" id="fullscreen" class="cb" type="button" aria-label="Pantalla completa" data-icon="full"><svg class="i"><use href="#i-full"></use></svg></button>
+      </div>
+     </div>
+    </div>
+   </div>
+
+   <section id="studio-editor" class="clip" aria-label="Recorte">
+    <div class="clip-head"><span class="label-cond">Tu jugada</span><span class="du" title="Duración del recorte"><span class="sr-only">Duración del recorte </span><strong id="clip-length">05:00</strong></span></div>
+    <div class="nums">
+     <label class="num"><small>Inicio</small><span class="tc"><span class="tc-view" id="clip-start-view" aria-hidden="true"><i>00:</i>00:00</span><input id="clip-start" type="text" inputmode="numeric" value="00:00:00" placeholder="HH:MM:SS" autocomplete="off" aria-label="Inicio del recorte (HH:MM:SS)"></span></label>
+     <svg class="i nums-arrow"><use href="#i-chevron-r"></use></svg>
+     <label class="num num-r"><small>Fin</small><span class="tc"><span class="tc-view" id="clip-end-view" aria-hidden="true"><i>00:</i>05:00</span><input id="clip-end" type="text" inputmode="numeric" value="00:05:00" placeholder="HH:MM:SS" autocomplete="off" aria-label="Fin del recorte (HH:MM:SS)"></span></label>
+    </div>
+   </section>
+
+   <section class="tl" id="timeline" aria-label="Línea de tiempo del recorte">
+    <div class="tl-ruler" id="tl-ruler" aria-hidden="true"><span class="tick major" style="left: 0%;"></span><span class="tlabel first" style="left: 0%;">00:00</span><span class="tick" style="left: 1.99879%;"></span><span class="tick" style="left: 3.99757%;"></span><span class="tick" style="left: 5.99636%;"></span><span class="tick" style="left: 7.99515%;"></span><span class="tick major" style="left: 9.99394%;"></span><span class="tlabel" style="left: 9.99394%;">05:00</span><span class="tick" style="left: 11.9927%;"></span><span class="tick" style="left: 13.9915%;"></span><span class="tick" style="left: 15.9903%;"></span><span class="tick" style="left: 17.9891%;"></span><span class="tick major" style="left: 19.9879%;"></span><span class="tlabel" style="left: 19.9879%;">10:00</span><span class="tick" style="left: 21.9867%;"></span><span class="tick" style="left: 23.9854%;"></span><span class="tick" style="left: 25.9842%;"></span><span class="tick" style="left: 27.983%;"></span><span class="tick major" style="left: 29.9818%;"></span><span class="tlabel" style="left: 29.9818%;">15:00</span><span class="tick" style="left: 31.9806%;"></span><span class="tick" style="left: 33.9794%;"></span><span class="tick" style="left: 35.9782%;"></span><span class="tick" style="left: 37.977%;"></span><span class="tick major" style="left: 39.9757%;"></span><span class="tlabel" style="left: 39.9757%;">20:00</span><span class="tick" style="left: 41.9745%;"></span><span class="tick" style="left: 43.9733%;"></span><span class="tick" style="left: 45.9721%;"></span><span class="tick" style="left: 47.9709%;"></span><span class="tick major" style="left: 49.9697%;"></span><span class="tlabel" style="left: 49.9697%;">25:00</span><span class="tick" style="left: 51.9685%;"></span><span class="tick" style="left: 53.9673%;"></span><span class="tick" style="left: 55.966%;"></span><span class="tick" style="left: 57.9648%;"></span><span class="tick major" style="left: 59.9636%;"></span><span class="tlabel" style="left: 59.9636%;">30:00</span><span class="tick" style="left: 61.9624%;"></span><span class="tick" style="left: 63.9612%;"></span><span class="tick" style="left: 65.96%;"></span><span class="tick" style="left: 67.9588%;"></span><span class="tick major" style="left: 69.9576%;"></span><span class="tlabel" style="left: 69.9576%;">35:00</span><span class="tick" style="left: 71.9563%;"></span><span class="tick" style="left: 73.9551%;"></span><span class="tick" style="left: 75.9539%;"></span><span class="tick" style="left: 77.9527%;"></span><span class="tick major" style="left: 79.9515%;"></span><span class="tlabel" style="left: 79.9515%;">40:00</span><span class="tick" style="left: 81.9503%;"></span><span class="tick" style="left: 83.9491%;"></span><span class="tick" style="left: 85.9479%;"></span><span class="tick" style="left: 87.9466%;"></span><span class="tick major" style="left: 89.9454%;"></span><span class="tlabel" style="left: 89.9454%;">45:00</span><span class="tick" style="left: 91.9442%;"></span><span class="tick" style="left: 93.943%;"></span><span class="tick" style="left: 95.9418%;"></span><span class="tick" style="left: 97.9406%;"></span><span class="tick major" style="left: 99.9394%;"></span></div>
+    <div class="trim-track" id="trim-track">
+     <span class="tl-played" id="tl-played" style="width: 0%;"></span>
+     <div class="trim-highlight" id="trim-highlight" style="left: 0%; width: 9.99394%;">
+      <span class="hd hd-a" id="hd-in" aria-hidden="true"></span><span class="hd hd-b" id="hd-out" aria-hidden="true"></span>
+      <span class="fl fl-a near-a" aria-hidden="true"><small>Inicio</small><span id="fl-in">00:00</span></span><span class="fl fl-b near-b" aria-hidden="true"><small>Fin</small><span id="fl-out">05:00</span></span>
+     </div>
+     <span class="tl-cursor" id="tl-cursor" style="left: 0%;"></span>
+     <input id="trim-in" class="sr-only" type="range" min="0" max="3001" step="1" value="0" aria-label="Inicio del recorte">
+     <input id="trim-out" class="sr-only" type="range" min="0" max="3001" step="1" value="300" aria-label="Fin del recorte">
+    </div>
+    <div class="timeline-heading sr-only"><span id="video-duration">Duración: 00:50:01</span><span id="clip-summary">00:00:00 → 00:05:00</span></div>
+   </section>
+
+   <div class="clip-actions" id="clip-actions">
+    <button tabindex="-1" id="mark-in" class="act" type="button" aria-label="Marcar inicio en la posición actual"><svg class="i"><use href="#i-markin"></use></svg>Marcar inicio</button>
+    <button tabindex="-1" id="preview-clip" class="act act-pv" type="button" aria-label="Reproducir recorte"><svg class="i"><use href="#i-play"></use></svg><span class="pv-label">Vista previa</span></button>
+    <button tabindex="-1" id="mark-out" class="act" type="button" aria-label="Marcar fin en la posición actual"><svg class="i"><use href="#i-markout"></use></svg>Marcar fin</button>
+   </div>
+
+   <section class="export" id="export" aria-label="Exportar">
+    <div class="label-cond lbl-export">Exportar</div>
+    <div class="field-group">
+     <label class="lbl" for="export-name">Nombre del archivo</label>
+     <div class="name-field">
+      <svg class="i"><use href="#i-pencil"></use></svg>
+      <span class="name-box"><span class="name-view" id="export-name-view" aria-hidden="true">Partido - Cancha 1 - 2026-11-10 - 15-30</span><input id="export-name" value="Partido - Cancha 1 - 2026-11-10 - 15-30" type="text" maxlength="160" autocomplete="off" placeholder="Nombre de la descarga"></span>
+      <span class="ext" id="export-ext">.mp4</span>
+     </div>
+    </div>
+    <fieldset class="field-group seg-group">
+     <legend class="lbl">Formato</legend>
+     <div class="seg">
+      <label><input type="radio" name="format" value="mp4" checked=""><span>MP4<em>H.264 + AAC</em></span></label>
+      <label><input type="radio" name="format" value="ts"><span>TS<em>Original</em></span></label>
+     </div>
+    </fieldset>
+    <fieldset class="field-group seg-group">
+     <legend class="lbl">Alcance</legend>
+     <div class="seg">
+      <label><input type="radio" name="scope" value="clip" checked=""><span>Recorte<em id="scope-clip">00:00:00 → 00:05:00</em></span></label>
+      <label><input type="radio" name="scope" value="full"><span>Partido completo<em id="scope-full">00:50:01</em></span></label>
+     </div>
+    </fieldset>
+
+    <div class="dl-bar">
+     <label class="mode-chip" for="export-mode"><span class="mode-text"><b id="mode-format">MP4</b><small id="mode-scope">Recorte</small></span><svg class="i"><use href="#i-chevron"></use></svg>
+      <select tabindex="-1" id="export-mode" aria-label="Formato y alcance de la descarga"><option value="mp4-clip">MP4 · Recorte</option><option value="ts-clip">TS · Recorte</option><option value="mp4-full">MP4 · Partido completo</option><option value="ts-full">TS · Partido completo</option></select></label>
+     <div class="dl" id="dl">
+      <button tabindex="-1" id="download" class="dl-btn" type="button" aria-label="Descargar recorte MP4">
+       <span class="dl-layer dl-base"><svg class="i"><use href="#i-download"></use></svg><span class="dl-text"><span class="dl-title">Descargar recorte MP4</span><small class="dl-sub"></small></span></span>
+       <span class="dl-layer dl-fill" aria-hidden="true"><svg class="i"><use href="#i-download"></use></svg><span class="dl-text"><span class="dl-title">Descargar recorte MP4</span><small class="dl-sub"></small></span></span>
+      </button>
+      <button tabindex="-1" id="cancel-export" class="dl-cancel hidden" type="button" aria-label="Cancelar descarga"><svg class="i"><use href="#i-x"></use></svg></button>
+     </div>
+    </div>
+    <div class="bardo-wrap" id="bardo-wrap">
+     <div class="dl dl-bardo" id="dl-bardo">
+      <button tabindex="-1" id="bardo-go" class="dl-btn" type="button" aria-haspopup="dialog" aria-label="Bardealo por WhatsApp 😈">
+       <span class="dl-layer dl-base"><svg class="i"><use href="#i-share"></use></svg><span class="dl-text"><span class="dl-title">Bardealo por WhatsApp 😈</span><small class="dl-sub"></small></span></span>
+       <span class="dl-layer dl-fill" aria-hidden="true"><svg class="i"><use href="#i-share"></use></svg><span class="dl-text"><span class="dl-title">Bardealo por WhatsApp 😈</span><small class="dl-sub"></small></span></span>
+      </button>
+      <button tabindex="-1" id="bardo-cancel" class="dl-cancel hidden" type="button" aria-label="Cancelar preparación"><svg class="i"><use href="#i-x"></use></svg></button>
+     </div>
+     <p id="bardo-hint" class="bardo-hint"></p>
+    </div>
+    <progress id="export-progress" class="sr-only" value="0" max="100"></progress>
+    <div id="export-card" class="export-card hidden"><svg class="i ec-ok"><use href="#i-check"></use></svg><svg class="i ec-err"><use href="#i-alert"></use></svg><div class="ec-body"><p id="export-status" role="status"></p></div></div>
+    <p class="export-hint">Video H.264 y audio AAC originales · sin recodificar</p>
+   </section>
+  </div></main></div></body></html>

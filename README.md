@@ -1,8 +1,16 @@
-# Beelup Studio v1.4 — Bardealo 😈
+# Beelup Studio v1.4.1 — Búsqueda tolerante a fallas
 
-Publicar en GitHub Pages los mismos archivos que la v1.3 (`index.html`, `style.css`, `app.js`, `studio.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest`, `fonts/`). Sin cambios en el Cloudflare Worker. `app.js` y `remux.js` son idénticos a la v1.3.
+Publicar en GitHub Pages: `index.html`, `style.css`, `app.js`, `studio.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest`, `fonts/`. Requiere el Cloudflare Worker v0.9. `studio.js` y `remux.js` son idénticos a la v1.4.
 
-## Novedad: Bardealo 😈
+## v1.4.1 — Búsqueda tolerante a fallas
+
+- Las llamadas de búsqueda (clubes, canchas, fechas y horarios) esperan hasta **25 s** por intento.
+- Hasta **2 reintentos automáticos** (1,5 s y 4 s) sólo ante errores de red, tiempo agotado y HTTP 5xx; los 4xx no se reintentan.
+- Mensajes específicos según la causa (sin conexión, red bloqueada, tiempo agotado, Beelup no disponible, consulta rechazada, demasiadas consultas) y botón **«Reintentar»**.
+- Al cambiar de país o de selección se cancelan los pedidos y reintentos anteriores; una respuesta tardía nunca pisa una búsqueda más reciente.
+- Al volver la conexión a internet se repite solo el paso que había fallado.
+
+## v1.4 — Bardealo 😈
 
 - Al terminar un **recorte MP4** aparece «Bardealo 😈» en el mensaje de «MP4 generado».
 - Abre un diálogo con una frase de cargada al azar (18 frases), editable, con «Otra frase» y «Copiar frase».

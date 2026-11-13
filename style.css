@@ -71,6 +71,11 @@ a{color:inherit;text-decoration:none}
 .find:disabled{opacity:.35;cursor:not-allowed}
 .finder-status{position:absolute;left:50%;transform:translateX(-50%);top:74px;font-size:12px;color:var(--mut);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
 body.has-match .finder-status{display:none}
+.finder-status{display:flex;align-items:center;justify-content:center;gap:10px}
+#status{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.finder-status.err #status{color:var(--err)}
+body.api-down .online{background:var(--err)}
+.retry{flex:none;height:28px;padding:0 14px;border-radius:14px;background:var(--lime);color:var(--ink);font-size:12.5px;font-weight:650}
 
 /* Portada (antes de elegir un partido) en escritorio */
 @media (min-width:1100px){
@@ -330,7 +335,8 @@ body.has-match .finder-status{display:none}
  .find-label,.find .find-arrow{display:block}
  .find .i:not(.find-arrow){display:none}
  .finder-status{position:static;transform:none;white-space:normal;text-align:center;max-width:none;margin-top:12px;font-size:12.5px;line-height:1.5}
- body.has-match .finder-status{display:block}
+ body.has-match .finder-status{display:flex}
+ .finder-status{flex-wrap:wrap;row-gap:8px}
 
  .studio{padding-bottom:0}
  .score{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-start;gap:0 12px;min-height:0;padding:6px 2px 14px}

@@ -1,4 +1,4 @@
-const CACHE = 'beelup-studio-ghpages-v14';
+const CACHE = 'beelup-studio-ghpages-v141';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './studio.js', './remux.js', './icon.svg', './manifest.webmanifest',
   './fonts/inter-var.woff2', './fonts/barlow-condensed-500.woff2', './fonts/barlow-condensed-600.woff2', './fonts/barlow-condensed-700.woff2',
   './fonts/jbmono-400.woff2', './fonts/jbmono-500.woff2'];

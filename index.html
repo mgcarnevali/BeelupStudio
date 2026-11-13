@@ -38,6 +38,9 @@
  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></symbol>
  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.4 2.3 3.6 5 3.6 8s-1.2 5.7-3.6 8c-2.4-2.3-3.6-5-3.6-8S9.6 6.3 12 4z"/></symbol>
+ <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3.5c2 0 3.2 1 4.3 2.7l1.4 2.2M4 17h3.5c2 0 3.2-1 4.3-2.7"/><path d="M14.6 14.3c1.1 1.7 2.3 2.7 4.3 2.7H20M15 7h5M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M15.5 8.5V6.2A1.7 1.7 0 0 0 13.8 4.5H6.2A1.7 1.7 0 0 0 4.5 6.2v7.6a1.7 1.7 0 0 0 1.7 1.7h2.3"/></symbol>
+ <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 7.5 12 3.5l4 4"/><path d="M8.5 10.5H7A2.5 2.5 0 0 0 4.5 13v5A2.5 2.5 0 0 0 7 20.5h10a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-1.5"/></symbol>
  <symbol id="i-retry" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
 </svg>
 
@@ -176,15 +179,42 @@
       <button id="cancel-export" class="dl-cancel hidden" type="button" aria-label="Cancelar descarga"><svg class="i"><use href="#i-x"/></svg></button>
      </div>
     </div>
+    <div class="bardo-wrap" id="bardo-wrap">
+     <div class="dl dl-bardo" id="dl-bardo">
+      <button id="bardo-go" class="dl-btn" type="button" aria-haspopup="dialog">
+       <span class="dl-layer dl-base"><svg class="i"><use href="#i-share"/></svg><span class="dl-text"><span class="dl-title">Bardealo por WhatsApp 😈</span><small class="dl-sub"></small></span></span>
+       <span class="dl-layer dl-fill" aria-hidden="true"><svg class="i"><use href="#i-share"/></svg><span class="dl-text"><span class="dl-title">Bardealo por WhatsApp 😈</span><small class="dl-sub"></small></span></span>
+      </button>
+      <button id="bardo-cancel" class="dl-cancel hidden" type="button" aria-label="Cancelar preparación"><svg class="i"><use href="#i-x"/></svg></button>
+     </div>
+     <p id="bardo-hint" class="bardo-hint"></p>
+    </div>
     <progress id="export-progress" class="sr-only" value="0" max="100"></progress>
-    <div id="export-card" class="export-card hidden"><svg class="i ec-ok"><use href="#i-check"/></svg><svg class="i ec-err"><use href="#i-alert"/></svg><p id="export-status" role="status"></p></div>
+    <div id="export-card" class="export-card hidden"><svg class="i ec-ok"><use href="#i-check"/></svg><svg class="i ec-err"><use href="#i-alert"/></svg><div class="ec-body"><p id="export-status" role="status"></p></div></div>
     <p class="export-hint">Video H.264 y audio AAC originales · sin recodificar</p>
    </section>
   </div>
  </main>
 
- <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.3</span></footer>
+ <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4</span></footer>
 </div>
+<dialog id="bardo" class="bardo" aria-labelledby="bardo-title">
+ <form method="dialog" class="bardo-inner">
+  <header class="bardo-head">
+   <div><h2 id="bardo-title" class="bardo-title">Bardealo 😈</h2><p class="bardo-sub">Compartí el clip por WhatsApp u otra app.</p></div>
+   <button class="bardo-close" value="close" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
+  </header>
+  <div class="bardo-clip"><svg class="i"><use href="#i-check"/></svg><span class="bardo-clip-text"><b>MP4 listo para compartir</b><span id="bardo-file">Clip MP4</span></span><span id="bardo-size" class="bardo-size"></span></div>
+  <label class="lbl" for="bardo-text">Frase</label>
+  <textarea id="bardo-text" class="bardo-text" rows="3" maxlength="500" spellcheck="true"></textarea>
+  <div class="bardo-tools">
+   <button id="bardo-shuffle" class="pill-btn" type="button"><svg class="i"><use href="#i-shuffle"/></svg>Otra frase</button>
+   <button id="bardo-copy" class="pill-btn" type="button"><svg class="i"><use href="#i-copy"/></svg><span>Copiar frase</span></button>
+  </div>
+  <p id="bardo-note" class="bardo-note" role="status"></p>
+  <button id="bardo-share" class="bardo-share" type="button"><svg class="i"><use href="#i-share"/></svg>Compartir video</button>
+ </form>
+</dialog>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js" defer></script>
 <script src="./app.js" defer></script>
 <script src="./remux.js" defer></script>

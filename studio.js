@@ -92,8 +92,8 @@
     $('score-court').textContent = optionText('court') || selection.court;
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selection.date || '');
     $('score-date').textContent = m ? `${m[3]}.${m[2]}.${m[1]}` : (selection.date || '—');
-    const t = optionText('time').replace(/\s+(to|a)\s+/i, ' – ');
-    $('score-time').textContent = /\d/.test(t) ? t : selection.time;
+    const hm = /(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/.exec(optionText('time'));
+    $('score-time').textContent = hm ? `${hm[1]} – ${hm[2]}` : selection.time;
     $('score-duration').textContent = '—';
     $('watch-m').href = $('watch').href;
   }
@@ -231,6 +231,58 @@
     segments = []; duration = 0; nativeFallbackTried = false;
   }
 
+  /* Playlist para el reproductor (no para exportar).
+     Beelup cierra cada archivo de 5 min con un segmento de 0,0x s sin audio ni video, justo antes de
+     #EXT-X-DISCONTINUITY. Al saltar al borde de un archivo, hls.js marca ese segmento como hueco y puede
+     dejar de pedir el siguiente, y el video queda «buscando». Aquí se quitan sólo los segmentos que se
+     verifican vacíos (sin ningún paquete de audio ni de video) y su duración se suma al segmento
+     anterior, de modo que los tiempos de todos los demás segmentos y la duración total no cambian.
+     La exportación sigue usando la playlist original. */
+  const EMPTY_SEG_MAX = 0.2; // s: sólo se analizan segmentos así de cortos
+  let playerPlaylistInfo = null;
+  async function playerPlaylist(txt) {
+    const rows = txt.split(/\r?\n/);
+    const segs = []; // {inf, uri, d, url}
+    for (let i = 0; i < rows.length; i++) {
+      if (!rows[i].startsWith('#EXTINF:')) continue;
+      let u = i + 1;
+      while (u < rows.length && (!rows[u].trim() || rows[u].startsWith('#'))) u++;
+      if (u >= rows.length) break;
+      segs.push({ inf: i, uri: u, d: Number(rows[i].slice(8).split(',')[0]), url: rows[u].trim() });
+      i = u;
+    }
+    const nextTag = s => { for (let k = s.uri + 1; k < rows.length; k++) if (rows[k].trim()) return rows[k]; return '#EXT-X-ENDLIST'; };
+    const candidates = segs.filter((s, k) => k > 0 && s.d > 0 && s.d <= EMPTY_SEG_MAX && /^#EXT-X-(DISCONTINUITY|ENDLIST)\b/.test(nextTag(s)));
+    // Verificación real del contenido (cada uno pesa unos cientos de bytes).
+    const isEmpty = async seg => {
+      try {
+        const buf = await (await api('/api/segment', { url: seg.url }, AbortSignal.timeout(6000))).arrayBuffer();
+        const st = { pmtPid: null, videoPid: null, audioPid: null, unsupported: null };
+        const pes = BeelupMp4._internal.demuxTs(new Uint8Array(buf), st);
+        return pes.video.length === 0 && pes.audio.length === 0;
+      } catch { return false; } // ante cualquier duda, se conserva
+    };
+    const checks = candidates.length <= 60 ? await Promise.all(candidates.map(isEmpty)) : candidates.map(() => false);
+    const drop = new Set(candidates.filter((_, k) => checks[k]));
+    const removeRows = new Set();
+    let lastKept = null;
+    const durations = new Map(segs.map(s => [s, s.d]));
+    for (const s of segs) {
+      if (drop.has(s) && lastKept) {
+        durations.set(lastKept, durations.get(lastKept) + s.d);
+        removeRows.add(s.inf); removeRows.add(s.uri);
+      } else lastKept = s;
+    }
+    const out = rows.map((row, i) => {
+      if (removeRows.has(i)) return null;
+      const s = segs.find(x => x.inf === i);
+      if (s && durations.get(s) !== s.d) return '#EXTINF:' + Number(durations.get(s).toFixed(6)) + row.slice(8).replace(/^[^,]*/, '');
+      return row;
+    }).filter(r => r !== null);
+    playerPlaylistInfo = { candidates: candidates.map(s => ({ url: s.url, d: s.d })), removed: [...drop].map(s => ({ url: s.url, d: s.d })) };
+    return out.join('\n');
+  }
+
   function makePlayer(txt) {
     const proxied = txt.split(/\r?\n/).map(line => line && !line.startsWith('#') ? BASE + '/api/segment?' + new URLSearchParams({ url: line.trim() }) : line).join('\n');
     playlistBlob = URL.createObjectURL(new Blob([proxied], { type: 'application/vnd.apple.mpegurl' }));
@@ -283,9 +335,11 @@
       if (version !== loadVersion) return;
       if (!txt.startsWith('#EXTM3U')) throw Error('No se recibió una playlist HLS.');
       const parsed = parsePlaylist(txt);
+      const playerTxt = await playerPlaylist(txt);
+      if (version !== loadVersion) return;
       playlistId = resolved.id;
       segments = parsed.items; duration = parsed.time;
-      makePlayer(txt);
+      makePlayer(playerTxt);
       $('video-duration').textContent = 'Duración: ' + fmt(duration);
       $('score-duration').textContent = short(duration);
       $('scope-full').textContent = fmt(duration);
@@ -315,6 +369,7 @@
 
   window.addEventListener('beelup:selection', e => {
     if (exportAbort) exportAbort.abort();
+    setShareClip(null);
     selection = e.detail; loadVersion++;
     clear();
     fillScoreboard();
@@ -498,12 +553,14 @@
     mp4: document.querySelector('input[name=format]:checked').value === 'mp4',
     full: document.querySelector('input[name=scope]:checked').value === 'full'
   });
-  function setDownloadLabel(title, sub = '') {
-    for (const layer of document.querySelectorAll('#download .dl-layer')) {
+  // Botón que muestra el progreso de la exportación en curso: 'download' o 'bardo-go'.
+  let activeBtn = 'download';
+  function setDownloadLabel(title, sub = '', id = 'download') {
+    for (const layer of document.querySelectorAll(`#${id} .dl-layer`)) {
       layer.querySelector('.dl-title').textContent = title;
       layer.querySelector('.dl-sub').textContent = sub;
     }
-    $('download').setAttribute('aria-label', sub ? `${title}, ${sub}` : title);
+    $(id).setAttribute('aria-label', sub ? `${title}, ${sub}` : title);
   }
   function syncMode(fromSelect = false) {
     if (fromSelect) {
@@ -517,25 +574,31 @@
     $('mode-scope').textContent = m.full ? 'Completo' : 'Recorte';
     $('export-ext').textContent = m.mp4 ? '.mp4' : '.ts';
     if (!busy) setDownloadLabel(`Descargar ${m.full ? 'partido completo' : 'recorte'} ${m.mp4 ? 'MP4' : '.ts'}`);
+    updateShareUI();
   }
   for (const input of document.querySelectorAll('input[name=format], input[name=scope]')) input.addEventListener('change', () => syncMode());
   $('export-mode').addEventListener('change', () => syncMode(true));
   $('export-name').addEventListener('input', renderName);
   $('export-name').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
-  function setBusy(on) {
+  function setBusy(on, which = 'download') {
     busy = on;
-    $('dl').classList.toggle('busy', on);
+    if (on) activeBtn = which;
+    const share = activeBtn === 'bardo-go';
+    $('dl').classList.toggle('busy', on && !share);
+    $('dl-bardo').classList.toggle('busy', on && share);
     $('download').disabled = on;
-    $('cancel-export').classList.toggle('hidden', !on);
+    $('bardo-go').disabled = on || !SHARE_SUPPORTED;
+    $('cancel-export').classList.toggle('hidden', !(on && !share));
+    $('bardo-cancel').classList.toggle('hidden', !(on && share));
     for (const el of document.querySelectorAll('input[name=format], input[name=scope], #export-mode')) el.disabled = on;
-    $('download').style.setProperty('--p', '0%');
-    if (!on) syncMode();
+    $(activeBtn).style.setProperty('--p', '0%');
+    if (!on) { activeBtn = 'download'; syncMode(); }
   }
   function setDownloadProgress(fraction, title, sub) {
     const pct = Math.max(0, Math.min(100, fraction * 100));
-    $('download').style.setProperty('--p', pct.toFixed(1) + '%');
+    $(activeBtn).style.setProperty('--p', pct.toFixed(1) + '%');
     $('export-progress').value = Math.round(pct);
-    setDownloadLabel(title, sub);
+    setDownloadLabel(title, sub, activeBtn);
   }
 
   /* ---------------- Exportación ---------------- */
@@ -581,8 +644,9 @@
     setTimeout(() => URL.revokeObjectURL(url), 5 * 60000);
   }
 
-  async function exportVideo(full, mp4 = false) {
+  async function exportVideo(full, mp4 = false, intent = 'download') {
     if (busy || !segments.length) return;
+    const sharing = intent === 'share';
     const a = full ? 0 : seconds($('clip-start').value);
     const b = full ? duration : seconds($('clip-end').value);
     if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b > Math.ceil(duration) + 0.1 || a >= b) { progress('Inicio y fin inválidos.', 'err'); return; }
@@ -591,14 +655,19 @@
     const chosen = segments.filter(s => s.end > from && s.start < b);
     if (!chosen.length) { progress('El rango elegido no contiene video.', 'err'); return; }
     const approx = chosen.at(-1).end - chosen[0].start;
+    // Compartir: si el mismo recorte ya está en memoria, se reutiliza sin bajar ni procesar nada.
+    const clipKey = `${loadVersion}|${a}|${b}`;
+    if (sharing && shareClip && shareClip.key === clipKey) { openBardo(); return; }
     if (!full && approx > 600 && !confirm('El fragmento supera 10 minutos y puede consumir muchos datos y memoria. ¿Continuar?')) return;
     if (full && !confirm('Un partido completo puede superar la memoria del navegador y consumir muchos datos. ¿Continuar?')) return;
 
+    setShareClip(null);
     exportAbort = new AbortController();
     const signal = exportAbort.signal;
-    setBusy(true);
+    setBusy(true, sharing ? 'bardo-go' : 'download');
     progress('');
-    setDownloadProgress(0, 'Descargando', `0/${chosen.length} · 0%`);
+    const stepTitle = sharing ? 'Preparando' : 'Descargando';
+    setDownloadProgress(0, stepTitle, `0/${chosen.length} · 0%`);
     try {
       let bytes = 0, blob;
       const remuxer = mp4 ? new BeelupMp4.Mp4Remuxer() : null;
@@ -606,6 +675,8 @@
       progress(`Descargando segmentos 0/${chosen.length}…`);
       await fetchSegments(chosen, signal, async (buf, seg, i) => {
         bytes += buf.byteLength;
+        // Compartir: cortar apenas se sabe que el MP4 superaría el límite.
+        if (sharing && bytes > SHARE_ABORT_BYTES) throw Object.assign(Error(`El recorte supera ${SHARE_LIMIT_MB} MB y no se puede compartir. Elegí uno de hasta unos 3 minutos o descargalo.`), { tooLarge: true });
         if (mp4) {
           if (bytes > MP4_LIMIT_MB * 1048576) throw Error(`El video supera ${MP4_LIMIT_MB} MB, demasiado para convertirlo en este dispositivo. Usá TS o un recorte más corto.`);
           remuxer.addSegment(new Uint8Array(buf), seg.start);
@@ -613,7 +684,7 @@
           pieces.push(new Blob([buf], { type: 'video/mp2t' }));
         }
         const frac = (i + 1) / chosen.length;
-        setDownloadProgress(frac, 'Descargando', `${i + 1}/${chosen.length} · ${Math.round(frac * 100)}%`);
+        setDownloadProgress(frac, stepTitle, `${i + 1}/${chosen.length} · ${Math.round(frac * 100)}%`);
         progress(`Descargando segmentos ${i + 1}/${chosen.length} · ${mb(bytes)} MB…`);
       });
       if (mp4) {
@@ -623,7 +694,17 @@
         const result = remuxer.finalize(full ? {} : { start: a - START_PREROLL, end: b });
         blob = result.blob;
         if (blob.size < 1024) throw Error('MP4 vacío.');
-        saveBlob(blob, downloadName(full, a, b, 'mp4'));
+        const fileName = downloadName(full, a, b, 'mp4');
+        if (sharing) {
+          // Sin descarga: el MP4 queda en memoria y se abre el diálogo para compartir.
+          if (blob.size > SHARE_LIMIT) throw Object.assign(Error(`El MP4 pesa ${mb(blob.size)} MB y supera el límite de ${SHARE_LIMIT_MB} MB para compartir. Elegí un recorte más corto o descargalo.`), { tooLarge: true });
+          setShareClip({ blob, name: fileName, key: clipKey });
+          progress('Tocá «Compartir video» para enviarlo por WhatsApp u otra app. No se descargó ningún archivo.', 'ok', `MP4 listo para compartir · ${mb(blob.size)} MB · ${fmt(Math.round(result.duration))}`);
+          openBardo();
+          return;
+        }
+        saveBlob(blob, fileName);
+        if (!full && blob.size <= SHARE_LIMIT) setShareClip({ blob, name: fileName, key: clipKey });
         const note = full ? '' : ' Empieza en el cuadro clave anterior al inicio elegido.';
         progress(`Video H.264 y audio AAC originales, con índice para adelantar y retroceder.${note}`, 'ok', `MP4 generado · ${mb(blob.size)} MB · ${fmt(Math.round(result.duration))}`);
       } else {
@@ -632,8 +713,9 @@
         progress('El recorte se ajusta a segmentos HLS.', 'ok', `Archivo TS generado · ${mb(blob.size)} MB`);
       }
     } catch (e) {
-      if (signal.aborted) progress('La descarga se detuvo antes de terminar.', 'info', 'Descarga cancelada');
-      else { progress(e.message, 'err', 'Error en descarga'); console.warn(e); }
+      if (signal.aborted) progress(sharing ? 'El video no se preparó.' : 'La descarga se detuvo antes de terminar.', 'info', sharing ? 'Preparación cancelada' : 'Descarga cancelada');
+      else if (e.tooLarge) progress(e.message, 'err', 'Demasiado grande para compartir');
+      else { progress(e.message, 'err', sharing ? 'No se pudo preparar el video' : 'Error en descarga'); console.warn(e); }
     } finally {
       exportAbort = null;
       setBusy(false);
@@ -641,6 +723,8 @@
   }
 
   $('cancel-export').addEventListener('click', () => exportAbort && exportAbort.abort());
+  $('bardo-cancel').addEventListener('click', () => exportAbort && exportAbort.abort());
+  $('bardo-go').addEventListener('click', () => { const m = mode(); if (m.mp4 && !m.full) exportVideo(false, true, 'share'); });
   $('download').addEventListener('click', () => { const m = mode(); exportVideo(m.full, m.mp4); });
 
   /* ---------------- Buscador (presentación) ---------------- */
@@ -659,20 +743,68 @@
     $('open-finder').setAttribute('aria-expanded', String(open));
     if (open) $('explorar').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  /* ---------------- Fechas y horarios en el idioma del navegador ---------------- */
+  // Beelup devuelve las etiquetas en el idioma que elige su servidor (en general inglés, a veces
+  // portugués). Sólo se reescribe el texto visible; el valor (fecha AAAA-MM-DD u hora) no cambia.
+  const UI_LOCALE = (() => {
+    for (const tag of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''])) {
+      const base = String(tag).toLowerCase().split('-')[0];
+      if (base === 'es' || base === 'en' || base === 'pt') return { tag, base };
+    }
+    return { tag: 'es-AR', base: 'es' };
+  })();
+  const DATE_WORDS = {
+    es: { today: 'Hoy', yesterday: 'Ayer', tomorrow: 'Mañana', to: 'a' },
+    en: { today: 'Today', yesterday: 'Yesterday', tomorrow: 'Tomorrow', to: 'to' },
+    pt: { today: 'Hoje', yesterday: 'Ontem', tomorrow: 'Amanhã', to: 'às' }
+  }[UI_LOCALE.base];
+  // Palabras relativas que puede mandar Beelup (las calcula con el huso horario del club).
+  const RELATIVE = { TODAY: 'today', HOY: 'today', HOJE: 'today', OGGI: 'today', YESTERDAY: 'yesterday', AYER: 'yesterday', ONTEM: 'yesterday', IERI: 'yesterday', TOMORROW: 'tomorrow', MANANA: 'tomorrow', AMANHA: 'tomorrow', DOMANI: 'tomorrow' };
+  let dayFormat = null;
+  try { dayFormat = new Intl.DateTimeFormat(UI_LOCALE.tag, { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }); } catch { dayFormat = null; }
+  const splitSuffix = text => { const i = text.indexOf(' · '); return i < 0 ? [text, ''] : [text.slice(0, i), text.slice(i)]; };
+  function dateLabel(value, apiText) {
+    const [label, suffix] = splitSuffix(apiText);
+    const word = label.trim().split(/\s+/)[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    if (RELATIVE[word]) return DATE_WORDS[RELATIVE[word]] + suffix;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!m || !dayFormat) return apiText;
+    const text = dayFormat.format(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return text.charAt(0).toLocaleUpperCase(UI_LOCALE.tag) + text.slice(1) + suffix;
+  }
+  function timeLabel(apiText) {
+    const [label, suffix] = splitSuffix(apiText);
+    const hm = /(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/.exec(label);
+    return hm ? `${hm[1]} ${DATE_WORDS.to} ${hm[2]}${suffix}` : apiText;
+  }
+  function localizeOptions(select, make) {
+    for (const o of select.options) {
+      if (!o.value) continue; // los textos guía («Elegí…») no vienen de la API
+      if (o.dataset.apiLabel === undefined) o.dataset.apiLabel = o.textContent;
+      const text = make(o.value, o.dataset.apiLabel);
+      if (o.textContent !== text) o.textContent = text;
+    }
+  }
+  const dateSel = $('date');
+  const localizeDates = () => localizeOptions(dateSel, dateLabel);
+  new MutationObserver(localizeDates).observe(dateSel, { childList: true });
+  localizeDates();
+
   // Horarios como botones en móvil (reflejan el <select id="time">).
   const timeSel = $('time');
   function renderTimeChips() {
+    localizeOptions(timeSel, (value, apiText) => timeLabel(apiText));
     const box = $('time-chips');
     const opts = [...timeSel.options].filter(o => o.value);
     box.replaceChildren();
     const wrap = timeSel.closest('.pk-time');
     wrap.classList.toggle('has-chips', opts.length > 0 && !timeSel.disabled);
-    wrap.querySelector('.pk-body').dataset.label = timeSel.value ? timeSel.selectedOptions[0].textContent.replace(/\s+to\s+/i, ' a ') : 'Elegí un horario';
+    wrap.querySelector('.pk-body').dataset.label = timeSel.value ? timeSel.selectedOptions[0].textContent : 'Elegí un horario';
     for (const o of opts) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'chip-t';
       b.textContent = o.value;
-      b.setAttribute('aria-label', o.textContent.replace(/\s+to\s+/i, ' a '));
+      b.setAttribute('aria-label', o.textContent);
       b.setAttribute('aria-pressed', String(o.value === timeSel.value));
       b.addEventListener('click', () => { timeSel.value = o.value; timeSel.dispatchEvent(new Event('change', { bubbles: true })); renderTimeChips(); });
       box.append(b);
@@ -684,8 +816,113 @@
   timeSel.addEventListener('change', renderTimeChips);
 
   window.addEventListener('resize', () => { if (duration) update(); });
+
+  /* ---------------- Bardealo (compartir el clip MP4) ---------------- */
+  // Se comparte el mismo Blob que se acaba de descargar: no se vuelve a bajar
+  // ni a procesar nada. Límite conservador: Chromium no comparte más de 50 MB.
+  const SHARE_LIMIT_MB = 45;
+  const SHARE_LIMIT = SHARE_LIMIT_MB * 1048576;
+  // El TS que llega pesa un poco más que el MP4 resultante: margen del 3 %.
+  const SHARE_ABORT_BYTES = SHARE_LIMIT * 1.03;
+  const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const PHRASES = [
+    'Te dejo el video porque sé que no viste pasar la pelota 😂🎾',
+    'Esto no fue un partido, fue una clase gratuita 😎',
+    'Guardalo, que no todos los días te hacen un punto así 😂',
+    'Para que lo veas en cámara lenta y entiendas qué pasó 🐢🎾',
+    'Mirá bien, que la pelota pasó por acá 👉🎾',
+    'Te lo mando para que lo pongas de fondo de pantalla 🖼️😏',
+    'Esto queda en el archivo histórico del club 📼😂',
+    'Te mando el video, el próximo cobro entrada 🎟️😎',
+    'Para que tengas pruebas cuando cuentes el partido 🙃',
+    'Tranqui, a todos nos pasa. Bueno, a vos más seguido 😂',
+    'Revisá el VAR: fue punto limpio 📺✅',
+    'La red te esperaba, la pelota no 🥲🎾',
+    'Clínica de pádel gratis, de nada 🧑‍🏫😎',
+    'Se te escapó la pelota y también la dignidad 😂',
+    'Ni el VAR lo puede salvar a esto 📺😂',
+    'Corriste mucho, eso hay que reconocerlo 🏃‍♂️😂',
+    'Video exclusivo, no lo compartas… o sí 😈',
+    'Para que no digas después que no fue para tanto 🙃🎾'
+  ];
+  let shareClip = null, shareFile = null, lastPhrase = -1;
+  // ¿El navegador permite compartir archivos MP4? (Web Share con archivos)
+  const SHARE_SUPPORTED = (() => {
+    try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(1)], 'prueba.mp4', { type: 'video/mp4' })] })); }
+    catch { return false; }
+  })();
+  function updateShareUI() {
+    const m = mode();
+    const show = m.mp4 && !m.full;
+    $('bardo-wrap').classList.toggle('hidden', !show);
+    if (!busy) { $('bardo-go').disabled = !SHARE_SUPPORTED; setDownloadLabel('Bardealo por WhatsApp 😈', '', 'bardo-go'); }
+    $('bardo-hint').textContent = SHARE_SUPPORTED ? '' : 'Este navegador no permite compartir archivos. Usá «Descargar recorte MP4» y adjuntalo en WhatsApp.';
+  }
+  const mbShort = bytes => (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB';
+  function setShareClip(clip) {
+    shareClip = clip; shareFile = null;
+    if (!clip && $('bardo').open) $('bardo').close();
+  }
+  function randomPhrase() {
+    let i;
+    do { i = Math.floor(Math.random() * PHRASES.length); } while (PHRASES.length > 1 && i === lastPhrase);
+    lastPhrase = i;
+    return PHRASES[i];
+  }
+  const bardoNote = (text, kind = '') => { $('bardo-note').textContent = text; $('bardo-note').dataset.kind = kind; };
+  // Qué impide compartir el archivo, o '' si se puede.
+  function shareBlocker() {
+    if (!shareClip) return 'Generá un recorte MP4 para compartirlo.';
+    if (shareClip.blob.size > SHARE_LIMIT) return `El clip pesa ${mbShort(shareClip.blob.size)}. Para compartirlo, elegí un recorte de hasta 45 MB (unos 3 minutos).`;
+    if (!navigator.share || !navigator.canShare || !navigator.canShare({ files: [shareFile] })) return 'Este navegador no permite compartir archivos. El MP4 ya se descargó: adjuntalo en WhatsApp y pegá la frase.';
+    return '';
+  }
+  function openBardo() {
+    if (!shareClip) return;
+    // El archivo se arma al abrir, para que el toque en «Compartir» no espere nada.
+    shareFile = new File([shareClip.blob], shareClip.name, { type: 'video/mp4' });
+    $('bardo-file').textContent = shareClip.name;
+    $('bardo-size').textContent = mbShort(shareClip.blob.size);
+    if (!$('bardo-text').value.trim()) $('bardo-text').value = randomPhrase();
+    const blocker = shareBlocker();
+    $('bardo-share').disabled = !!blocker;
+    bardoNote(blocker || (IS_IOS ? 'En iPhone, WhatsApp puede descartar el texto: copiá la frase y pegala en el chat.' : ''), blocker ? 'warn' : '');
+    $('bardo-copy').querySelector('span').textContent = 'Copiar frase';
+    if (!$('bardo').open) $('bardo').showModal();
+  }
+  $('bardo-shuffle').addEventListener('click', () => { $('bardo-text').value = randomPhrase(); $('bardo-copy').querySelector('span').textContent = 'Copiar frase'; });
+  $('bardo-copy').addEventListener('click', async () => {
+    const text = $('bardo-text').value.trim();
+    const label = $('bardo-copy').querySelector('span');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Alternativa sin Clipboard API: copiar desde el propio cuadro de texto.
+      const t = $('bardo-text'); t.focus(); t.select();
+      if (!document.execCommand || !document.execCommand('copy')) { label.textContent = 'No se pudo copiar'; return; }
+      t.setSelectionRange(t.value.length, t.value.length);
+    }
+    label.textContent = 'Frase copiada';
+  });
+  $('bardo-share').addEventListener('click', () => {
+    if (!shareFile || shareBlocker()) return;
+    const text = $('bardo-text').value.trim();
+    // En iPhone se comparte sólo el video: con texto, WhatsApp a veces descarta el archivo.
+    const data = { files: [shareFile] };
+    if (text && !IS_IOS) data.text = text;
+    // navigator.share se llama directamente en el toque (sin esperas previas).
+    navigator.share(data).then(() => {
+      bardoNote('Listo. Si la frase no apareció en el chat, usá «Copiar frase» y pegala.', 'ok');
+    }).catch(err => {
+      if (err && err.name === 'AbortError') return; // el usuario cerró la hoja de compartir
+      if (err && err.name === 'NotAllowedError') bardoNote('El navegador bloqueó la acción. Tocá «Compartir video» de nuevo.', 'warn');
+      else bardoNote('No se pudo compartir el video: ' + (err && err.message || 'error desconocido'), 'warn');
+    });
+  });
+  $('bardo').addEventListener('click', e => { if (e.target === $('bardo')) $('bardo').close(); }); // tocar fuera cierra
+
   syncMode();
 
   // Exponer para pruebas automatizadas.
-  window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; } };
+  window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; }, get shareClip() { return shareClip; }, get playerPlaylistInfo() { return playerPlaylistInfo; }, locale: UI_LOCALE, phrases: PHRASES };
 })();

@@ -428,3 +428,65 @@ body.has-match .finder-status{display:none}
 .video-stage:fullscreen .player-controls{padding-bottom:max(20px,env(safe-area-inset-bottom))}
 .studio-message[data-kind=err]{color:var(--err)}
 .studio-message[data-kind=warn]{color:#e9d27a}
+
+/* ---------------- v1.4 · Bardealo ---------------- */
+.ec-body{flex:1;min-width:0}
+.bardo{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 48px);padding:0;border:0;border-radius:24px;background:var(--s1);color:var(--tx);box-shadow:0 30px 80px #000000b3,inset 0 0 0 1px var(--line2)}
+.bardo::backdrop{background:#000000a6;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.bardo[open]{animation:bardo-in .18s ease-out}
+@keyframes bardo-in{from{opacity:0;transform:translateY(12px)}}
+@media (prefers-reduced-motion:reduce){.bardo[open]{animation:none}}
+.bardo-inner{display:flex;flex-direction:column;padding:24px 24px 22px}
+.bardo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.bardo-title{margin:0;font-family:var(--cond);font-weight:700;font-size:34px;line-height:1;letter-spacing:.5px;text-transform:uppercase}
+.bardo-sub{margin:6px 0 0;font-size:13px;color:var(--mut)}
+.bardo-close{width:36px;height:36px;border-radius:50%;background:var(--s3);display:grid;place-items:center;color:var(--mut);flex:none}
+.bardo-close .i{width:16px;height:16px}
+.bardo-clip{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#141c0d;font-size:12.5px;color:var(--mut);margin-bottom:16px;min-width:0}
+.bardo-clip .i{width:22px;height:22px;padding:4px;border-radius:50%;background:var(--lime);color:var(--ink);stroke-width:2.4}
+.bardo-clip #bardo-file{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
+.bardo-size{font-family:var(--mono);font-size:11.5px;flex:none}
+.bardo-text{width:100%;resize:vertical;min-height:92px;padding:14px 16px;border:0;border-radius:14px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2);color:var(--tx);font:500 16px/1.45 Inter,sans-serif;outline:none}
+.bardo-text:focus{box-shadow:inset 0 0 0 1px var(--lime)}
+.bardo-tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.bardo-tools .pill-btn{background:var(--s3);height:38px}
+.bardo-tools .pill-btn:hover{background:var(--s4)}
+.bardo-note{margin:12px 2px 0;font-size:12.5px;line-height:1.5;color:var(--mut);min-height:0}
+.bardo-note:empty{display:none}
+.bardo-note[data-kind=warn]{color:#e9d27a}
+.bardo-note[data-kind=ok]{color:var(--lime)}
+.bardo-share{display:flex;align-items:center;justify-content:center;gap:10px;height:56px;margin-top:16px;border-radius:28px;background:var(--lime);color:var(--ink);font-size:16px;font-weight:650}
+.bardo-share .i{width:20px;height:20px;stroke-width:2}
+.bardo-share:disabled{background:var(--s3);color:var(--dim);cursor:not-allowed}
+@media (max-width:1099px){
+ .bardo{width:100%;max-width:100%;margin:auto 0 0;border-radius:24px 24px 0 0;max-height:92vh}
+ .bardo[open]{animation:bardo-up .22s ease-out}
+ @keyframes bardo-up{from{transform:translateY(40px);opacity:.4}}
+ .bardo-inner{padding:20px 16px max(16px,env(safe-area-inset-bottom))}
+ .bardo-title{font-size:30px}
+ .bardo-tools .pill-btn{flex:1;justify-content:center}
+ .bardo-share{height:52px}
+}
+
+/* Bardealo por WhatsApp: segundo botón, oscuro con detalle lima */
+.bardo-wrap{display:flex;flex-direction:column;gap:8px}
+.dl-bardo .dl-btn{background:var(--s3);color:var(--lime);box-shadow:inset 0 0 0 1px #c4f54a52;font-size:15px}
+.dl-bardo .dl-btn:hover:not(:disabled){background:var(--s4)}
+.dl-bardo .dl-btn:disabled:not(.x){cursor:not-allowed}
+.dl-bardo:not(.busy) .dl-btn:disabled{color:var(--dim);box-shadow:inset 0 0 0 1px var(--line2)}
+.dl-bardo.busy .dl-btn{box-shadow:none}
+.bardo-hint{margin:0 4px;font-size:12px;line-height:1.5;color:#e9d27a}
+.bardo-hint:empty{display:none}
+.bardo-clip-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.bardo-clip-text b{color:var(--lime);font-weight:600;font-size:12.5px}
+.bardo-clip-text #bardo-file{font-size:12px}
+@media (min-width:1100px) and (max-width:1600px){.dl-bardo .dl-btn{height:46px}}
+@media (max-width:1099px){
+ .export>.field-group{order:1}
+ .dl-bar{order:2}
+ .bardo-wrap{order:3;margin:2px 0 0}
+ .export-card{order:4}
+ .export-hint{order:5}
+ .dl-bardo .dl-btn{height:48px;border-radius:24px;font-size:14px}
+ .dl-bardo .dl-layer{justify-content:center}
+}

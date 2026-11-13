@@ -1,4 +1,18 @@
-# Beelup Studio v1.3 — Padel Studio Premium
+# Beelup Studio v1.4 — Bardealo 😈
+
+Publicar en GitHub Pages los mismos archivos que la v1.3 (`index.html`, `style.css`, `app.js`, `studio.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest`, `fonts/`). Sin cambios en el Cloudflare Worker. `app.js` y `remux.js` son idénticos a la v1.3.
+
+## Novedad: Bardealo 😈
+
+- Al terminar un **recorte MP4** aparece «Bardealo 😈» en el mensaje de «MP4 generado».
+- Abre un diálogo con una frase de cargada al azar (18 frases), editable, con «Otra frase» y «Copiar frase».
+- «Compartir video» usa la Web Share API con **el mismo MP4 ya descargado**: no se vuelve a bajar ni a procesar y no se sube a ningún servidor.
+- Límite conservador de **45 MB** (unos 3 minutos de video): Chromium no comparte archivos de más de 50 MB. Los clips más grandes muestran un aviso; el partido completo y los TS no ofrecen la opción.
+- En iPhone se comparte sólo el video (WhatsApp a veces descarta el archivo si va con texto) y se sugiere copiar la frase. En el resto se envía el video con la frase.
+- Sin Web Share (por ejemplo, Firefox de escritorio) el diálogo permite copiar la frase y explica cómo adjuntar el MP4 descargado.
+- Las descargas MP4 y TS no cambian.
+
+## v1.3 — Padel Studio Premium
 
 Publicar en GitHub Pages: `index.html`, `style.css`, `app.js`, `studio.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest` y la carpeta **`fonts/` (nueva)**.
 No requiere cambios en el Cloudflare Worker. `app.js` y `remux.js` son idénticos a la v1.2.

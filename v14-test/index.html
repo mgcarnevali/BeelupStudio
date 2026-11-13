@@ -10,7 +10,7 @@
 <link rel="preload" href="./fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
 <title>Beelup Studio v1.4.2 (prueba)</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="./style.css?v=141t7">
+<link rel="stylesheet" href="./style.css?v=141t8">
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -78,18 +78,28 @@
  </header>
 
  <section class="home-demo" aria-label="Demostración del estudio">
-  <div class="demo" role="img" aria-label="Ejemplo ilustrativo, no funcional: imagen de un partido de pádel con los controles del reproductor, una línea de tiempo con un recorte de 30 segundos y botones para descargar en MP4 o compartir por WhatsApp.">
-   <div class="demo-frame" aria-hidden="true">
-    <img src="./home-partido-960.webp" srcset="./home-partido-640.webp 640w, ./home-partido-960.webp 960w, ./home-partido-1280.webp 1280w" sizes="(min-width:1100px) 54vw, (min-width:760px) 760px, 340px" width="1280" height="722" alt="" loading="lazy" decoding="async">
-    <div class="demo-ov"><div class="demo-prog"><i></i><s></s><b></b></div><div class="demo-ctr"><span class="demo-play"></span><span class="demo-time">00:05:04 <em>/ 01:20:00</em></span><span class="demo-r"><span class="demo-vol"><svg class="i" viewBox="0 0 24 24"><path d="M4 9.5h3l4-3.5v12l-4-3.5H4z"/><path d="M15 9.5a3.5 3.5 0 0 1 0 5"/></svg></span><span class="demo-sp">1×</span><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span></div></div>
-   </div>
-   <div class="demo-tl" aria-hidden="true">
-    <div class="demo-lab"><small>Inicio → Fin</small><b>00:04:50<span>›</span>00:05:20</b></div>
-    <div class="demo-track"><span class="demo-selr"></span></div>
-    <div class="demo-ticks"><span>00:00</span><span>15:00</span><span>30:00</span><span>45:00</span><span>01:00:00</span><span>01:15:00</span></div>
-    <div class="demo-btns"><span class="demo-btn demo-dl"><svg class="i"><use href="#i-download"/></svg>Descargar MP4</span><span class="demo-btn">Bardealo por WhatsApp 😈</span></div>
-   </div>
+  <div class="demo demo-embed" role="img" aria-label="Ejemplo ilustrativo, no funcional, del editor de Beelup Studio: video de un partido con sus controles, la sección Tu jugada con inicio y fin, la línea de tiempo y las opciones de descarga.">
+   <iframe class="demo-ed" title="" tabindex="-1" aria-hidden="true" loading="lazy" scrolling="no"></iframe>
   </div>
+  <script>
+  // Vista previa del Home: el editor real en miniatura (página estática, sin video ni interacción).
+  (() => {
+    const box = document.querySelector('.demo-embed'), frame = box.querySelector('iframe');
+    function fit() {
+      const wide = innerWidth >= 1100, w = wide ? 1180 : box.clientWidth;
+      const src = wide ? 'editor-demo-pc.html?v=141t8' : 'editor-demo-movil.html?v=141t8';
+      if (!frame.src.endsWith(src)) { frame.src = src; return; }
+      const scale = box.clientWidth / w;
+      frame.style.width = w + 'px';
+      frame.style.transform = 'scale(' + scale + ')';
+      const grid = frame.contentDocument && frame.contentDocument.querySelector('.studio-grid');
+      if (grid) { const h = grid.getBoundingClientRect().height; frame.style.height = h + 'px'; box.style.height = h * scale + 'px'; }
+    }
+    frame.addEventListener('load', () => { fit(); frame.contentDocument.fonts?.ready.then(fit); });
+    addEventListener('resize', fit);
+    fit();
+  })();
+  </script>
  </section>
 
  <main id="result" class="studio hidden" aria-labelledby="matchname">
@@ -214,7 +224,7 @@
   </div>
  </main>
 
- <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.2 · prueba 7</span></footer>
+ <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.2 · prueba 8</span></footer>
 </div>
 <dialog id="bardo" class="bardo" aria-labelledby="bardo-title">
  <form method="dialog" class="bardo-inner">
@@ -234,9 +244,9 @@
  </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js" defer></script>
-<script src="./app.js?v=141t7" defer></script>
-<script src="./remux.js?v=141t7" defer></script>
-<script src="./studio.js?v=141t7" defer></script>
-<script src="./picker.js?v=141t7" defer></script>
+<script src="./app.js?v=141t8" defer></script>
+<script src="./remux.js?v=141t8" defer></script>
+<script src="./studio.js?v=141t8" defer></script>
+<script src="./picker.js?v=141t8" defer></script>
 </body>
 </html>

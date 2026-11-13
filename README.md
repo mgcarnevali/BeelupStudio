@@ -1,6 +1,14 @@
-# Beelup Studio v1.4.1 — Búsqueda tolerante a fallas
+# Beelup Studio v1.4.2 — Selectores de País y Club con búsqueda
 
-Publicar en GitHub Pages: `index.html`, `style.css`, `app.js`, `studio.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest`, `fonts/`. Requiere el Cloudflare Worker v0.9. `studio.js` y `remux.js` son idénticos a la v1.4.
+Publicar en GitHub Pages: `index.html`, `style.css`, `app.js`, `studio.js`, `picker.js`, `remux.js`, `sw.js`, `icon.svg`, `manifest.webmanifest`, `fonts/`. Requiere el Cloudflare Worker v0.9. `studio.js` y `remux.js` son idénticos a la v1.4.
+
+## v1.4.2 — Selectores de País y Club con búsqueda
+
+- Al tocar País o Club se abre un desplegable con un campo de búsqueda arriba y las opciones debajo; el foco va directo a la búsqueda (en móvil se abre el teclado).
+- Filtra en tiempo real sin distinguir mayúsculas ni acentos, resalta lo escrito y muestra primero los resultados que empiezan con ese texto.
+- PC: flechas, RePág/AvPág, Enter para elegir, Escape o clic afuera para cerrar. Móvil: panel a pantalla completa que se ajusta al teclado táctil.
+- Se quitó el campo independiente «Filtrar clubes». Cancha, Fecha y Horario no cambian.
+- Los `<select>` originales siguen siendo la fuente de verdad (`picker.js` sólo les fija el valor), así que los valores enviados a la API no cambian.
 
 ## v1.4.1 — Búsqueda tolerante a fallas
 

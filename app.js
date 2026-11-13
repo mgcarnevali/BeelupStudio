@@ -140,18 +140,12 @@ function resetAfter(level) {
   for (let i = level + 1; i < fields.length; i++) options(fields[i], [], hints[i]);
   $('find').disabled = true; $('result').classList.add('hidden');
 }
-function filterClubs() {
-  const selected = $('club').value;
-  const query = $('search').value.trim().toLocaleLowerCase();
-  const filtered = clubs.filter(x => x.Nombre.toLocaleLowerCase().includes(query));
-  options('club', filtered, `${filtered.length} clubes · Seleccionar`);
-  if (filtered.some(x => x.Valor === selected)) $('club').value = selected;
+function showClubs() {
+  options('club', clubs, `${clubs.length} clubes · Seleccionar`);
   resetAfter(0);
 }
-$('search').addEventListener('input', filterClubs);
 function loadCountry() {
   clubs = [];
-  $('search').value = '';
   options('club', [], 'Cargando clubes…');
   resetAfter(-1);
   $('connection').textContent = 'Comprobando…';
@@ -159,7 +153,7 @@ function loadCountry() {
   status(`Cargando clubes de ${country}…`);
   return runStep(0, 'complejos', [], data => {
     clubs = data;
-    filterClubs();
+    showClubs();
     status(`${clubs.length} clubes disponibles en ${country}.`);
   });
 }

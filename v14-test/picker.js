@@ -112,8 +112,7 @@
       document.documentElement.classList.toggle('pk-lock', mobile.matches);
       fitViewport();
       render();
-      // En pantallas táctiles, el teclado se abre sólo en Club (la lista de países es corta).
-      if (!(coarse.matches && id === 'country')) input.focus({ preventScroll: true });
+      input.focus({ preventScroll: true });
     }
     function close(focusButton) {
       if (openPicker !== api) return;

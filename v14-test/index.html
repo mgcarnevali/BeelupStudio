@@ -8,9 +8,9 @@
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="preload" href="./fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
-<title>Beelup Studio v1.4.1 (prueba)</title>
+<title>Beelup Studio v1.4.2 (prueba)</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="./style.css?v=141t3">
+<link rel="stylesheet" href="./style.css?v=141t4">
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -53,6 +53,8 @@
    <div class="finder-intro">
     <h1>Encontrá<br><em>tu partido</em></h1>
     <p>El partido termina. La historia sigue.</p>
+    <p class="intro-lead">Buscá el partido grabado, marcá la jugada y llevátela en MP4. Todo en el navegador, sin instalar nada.</p>
+    <ul class="intro-tags"><li>MP4 listo en segundos</li><li>Corte preciso al fotograma</li><li>Bardealo por WhatsApp</li><li>Sin instalar nada</li></ul>
    </div>
    <div class="picker">
     <div class="pk pk-country"><span class="pk-n">01</span><svg class="i"><use href="#i-globe"/></svg><span class="pk-body"><span class="pk-k">País</span>
@@ -74,6 +76,24 @@
    <button id="open-finder" class="cir only-m hidden" type="button" aria-label="Buscar otro partido" aria-expanded="false"><svg class="i"><use href="#i-search"/></svg></button>
   </div>
  </header>
+
+ <section class="home-demo" aria-label="Demostración del estudio">
+  <div class="demo-cap"><span class="demo-badge">Demostración</span><span>Así se ve el estudio cuando elegís un partido</span></div>
+  <div class="demo" role="img" aria-label="Ejemplo ilustrativo, no funcional: video de un partido, línea de tiempo con un recorte de 30 segundos y botones para descargar en MP4 o compartir por WhatsApp.">
+   <div class="demo-frame" aria-hidden="true">
+    <svg viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice"><g fill="none" stroke="#c4f54a" stroke-opacity=".22" stroke-width="1.4"><path d="M70 200 140 40h120l70 160z"/><path d="M200 40v160M98 136h204M127 70h146"/><path d="M200 70v66" stroke-dasharray="3 4"/></g><path d="M104 120h192l18 45H86z" fill="#f1f4f2" fill-opacity=".04"/><path d="M86 165h228" stroke="#f1f4f2" stroke-opacity=".5" stroke-width="2"/><circle cx="232" cy="92" r="11" fill="#e6ff6b" fill-opacity=".12"/><circle cx="232" cy="92" r="4" fill="#e6ff6b"/></svg>
+    <span class="demo-chip demo-club">Club de ejemplo · Cancha 1</span>
+    <span class="demo-chip demo-dur">00:00:30</span>
+    <span class="demo-chip demo-clip">Recorte <b>00:04:50 – 00:05:20</b></span>
+   </div>
+   <div class="demo-tl" aria-hidden="true">
+    <div class="demo-bar"><span class="demo-sel"></span><span class="demo-ph"></span></div>
+    <div class="demo-ticks"><span>00:00</span><span>00:05</span><span>00:10</span><span>00:15</span><span>00:20</span><span>00:25</span><span>00:30</span></div>
+    <div class="demo-btns"><span class="demo-btn demo-dl"><svg class="i"><use href="#i-download"/></svg>Descargar MP4</span><span class="demo-btn">Bardealo por WhatsApp 😈</span></div>
+   </div>
+   <div class="demo-toast" aria-hidden="true"><svg class="i"><use href="#i-check"/></svg><span><b>MP4 generado</b><small>6,1 MB · 00:00:31</small></span></div>
+  </div>
+ </section>
 
  <main id="result" class="studio hidden" aria-labelledby="matchname">
   <h2 id="matchname" class="sr-only">Tu partido</h2>
@@ -197,7 +217,7 @@
   </div>
  </main>
 
- <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.1 · prueba 3</span></footer>
+ <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.2 · prueba 4</span></footer>
 </div>
 <dialog id="bardo" class="bardo" aria-labelledby="bardo-title">
  <form method="dialog" class="bardo-inner">
@@ -217,9 +237,9 @@
  </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js" defer></script>
-<script src="./app.js?v=141t3" defer></script>
-<script src="./remux.js?v=141t3" defer></script>
-<script src="./studio.js?v=141t3" defer></script>
-<script src="./picker.js?v=141t3" defer></script>
+<script src="./app.js?v=141t4" defer></script>
+<script src="./remux.js?v=141t4" defer></script>
+<script src="./studio.js?v=141t4" defer></script>
+<script src="./picker.js?v=141t4" defer></script>
 </body>
 </html>

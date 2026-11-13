@@ -4,7 +4,7 @@
    cambia la interfaz ("Padel Studio Premium"). El MP4 sigue en remux.js. */
 (() => {
   const $ = id => document.getElementById(id);
-  const BASE = 'https://beelup-studio-api.mgcarnevali.workers.dev';
+  const BASE = 'https://beelup-studio-api-test.mgcarnevali.workers.dev'; // /v14-test/: Worker de prueba v0.9
   const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   // Límite de datos para MP4. Los datos se guardan en Blobs (no en el heap de JS).
   const MP4_LIMIT_MB = IS_MOBILE ? 600 : 2000;

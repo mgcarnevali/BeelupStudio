@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const API = 'https://beelup-studio-api.mgcarnevali.workers.dev/api/beelup';
+const API = 'https://beelup-studio-api-test.mgcarnevali.workers.dev/api/beelup'; // /v14-test/: Worker de prueba v0.9
 let clubs = [], requestId = 0;
 const currentCountry = () => $('country').value;
 const countryCode = () => $('country').selectedOptions[0].dataset.code;

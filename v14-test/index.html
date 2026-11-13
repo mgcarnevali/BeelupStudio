@@ -10,7 +10,7 @@
 <link rel="preload" href="./fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
 <title>Beelup Studio v1.4.1 (prueba)</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="./style.css?v=141t1">
+<link rel="stylesheet" href="./style.css?v=141t2">
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -55,10 +55,10 @@
     <p>El partido termina. La historia sigue.</p>
    </div>
    <div class="picker">
-    <label class="pk pk-country"><span class="pk-n">01</span><svg class="i"><use href="#i-globe"/></svg><span class="pk-body"><span class="pk-k">País</span>
-     <select id="country" aria-label="Seleccionar país"><option value="ARGENTINA" data-code="ar">Argentina</option><option value="BOLIVIA" data-code="bo">Bolivia</option><option value="BRASIL" data-code="br">Brasil</option><option value="CHILE" data-code="cl">Chile</option><option value="COLOMBIA" data-code="co">Colombia</option><option value="COSTA RICA" data-code="cr">Costa Rica</option><option value="ECUADOR" data-code="ec">Ecuador</option><option value="GUATEMALA" data-code="gt">Guatemala</option><option value="ITALIA" data-code="it">Italia</option><option value="MALASIA" data-code="my">Malasia</option><option value="MEXICO" data-code="mx">México</option><option value="PANAMA" data-code="pa">Panamá</option><option value="PARAGUAY" data-code="py">Paraguay</option><option value="PERU" data-code="pe">Perú</option><option value="SUDAFRICA" data-code="za">Sudáfrica</option><option value="URUGUAY" data-code="uy">Uruguay</option><option value="USA" data-code="us">Estados Unidos</option><option value="VENEZUELA" data-code="ve">Venezuela</option></select></span><svg class="i pk-c"><use href="#i-chevron"/></svg></label>
-    <div class="pk pk-club"><span class="pk-n">02</span><svg class="i"><use href="#i-pin"/></svg><span class="pk-body"><label class="pk-k" for="club">Club</label>
-     <span class="pk-row"><select id="club"><option value="">Comprobando acceso...</option></select><span class="pk-filter"><svg class="i"><use href="#i-search"/></svg><input id="search" placeholder="Filtrar clubes" autocomplete="off" aria-label="Filtrar clubes"></span></span></span><svg class="i pk-c"><use href="#i-chevron"/></svg></div>
+    <div class="pk pk-country"><span class="pk-n">01</span><svg class="i"><use href="#i-globe"/></svg><span class="pk-body"><span class="pk-k">País</span>
+     <select id="country" aria-label="Seleccionar país"><option value="ARGENTINA" data-code="ar">Argentina</option><option value="BOLIVIA" data-code="bo">Bolivia</option><option value="BRASIL" data-code="br">Brasil</option><option value="CHILE" data-code="cl">Chile</option><option value="COLOMBIA" data-code="co">Colombia</option><option value="COSTA RICA" data-code="cr">Costa Rica</option><option value="ECUADOR" data-code="ec">Ecuador</option><option value="GUATEMALA" data-code="gt">Guatemala</option><option value="ITALIA" data-code="it">Italia</option><option value="MALASIA" data-code="my">Malasia</option><option value="MEXICO" data-code="mx">México</option><option value="PANAMA" data-code="pa">Panamá</option><option value="PARAGUAY" data-code="py">Paraguay</option><option value="PERU" data-code="pe">Perú</option><option value="SUDAFRICA" data-code="za">Sudáfrica</option><option value="URUGUAY" data-code="uy">Uruguay</option><option value="USA" data-code="us">Estados Unidos</option><option value="VENEZUELA" data-code="ve">Venezuela</option></select></span><svg class="i pk-c"><use href="#i-chevron"/></svg></div>
+    <div class="pk pk-club"><span class="pk-n">02</span><svg class="i"><use href="#i-pin"/></svg><span class="pk-body"><span class="pk-k">Club</span>
+     <select id="club" aria-label="Seleccionar club"><option value="">Comprobando acceso...</option></select></span><svg class="i pk-c"><use href="#i-chevron"/></svg></div>
     <label class="pk pk-court"><span class="pk-n">03</span><svg class="i"><use href="#i-court"/></svg><span class="pk-body"><span class="pk-k">Cancha</span><select id="court" disabled><option value="">Elegí un club primero</option></select></span><svg class="i pk-c"><use href="#i-chevron"/></svg></label>
     <label class="pk pk-date"><span class="pk-n">04</span><svg class="i"><use href="#i-calendar"/></svg><span class="pk-body"><span class="pk-k">Fecha</span><select id="date" disabled><option value="">Elegí una cancha primero</option></select></span><svg class="i pk-c"><use href="#i-chevron"/></svg></label>
     <div class="pk pk-time"><span class="pk-n">05</span><svg class="i"><use href="#i-clock"/></svg><span class="pk-body"><label class="pk-k" for="time">Horario</label><select id="time" disabled><option value="">Elegí una fecha primero</option></select></span><svg class="i pk-c"><use href="#i-chevron"/></svg>
@@ -197,7 +197,7 @@
   </div>
  </main>
 
- <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.1 · prueba 1</span></footer>
+ <footer class="foot">Proyecto independiente, no afiliado a Beelup. Las exportaciones requieren acceso autorizado a los videos y pueden depender del formato HLS. <span class="ver">v1.4.1 · prueba 2</span></footer>
 </div>
 <dialog id="bardo" class="bardo" aria-labelledby="bardo-title">
  <form method="dialog" class="bardo-inner">
@@ -217,8 +217,9 @@
  </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js" defer></script>
-<script src="./app.js?v=141t1" defer></script>
-<script src="./remux.js?v=141t1" defer></script>
-<script src="./studio.js?v=141t1" defer></script>
+<script src="./app.js?v=141t2" defer></script>
+<script src="./remux.js?v=141t2" defer></script>
+<script src="./studio.js?v=141t2" defer></script>
+<script src="./picker.js?v=141t2" defer></script>
 </body>
 </html>

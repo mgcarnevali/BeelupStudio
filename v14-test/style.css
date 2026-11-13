@@ -490,6 +490,3 @@ body.has-match .finder-status{display:none}
  .dl-bardo .dl-btn{height:48px;border-radius:24px;font-size:14px}
  .dl-bardo .dl-layer{justify-content:center}
 }
-
-/* Sólo /v14-test/: diagnóstico */
-.diag{white-space:pre-wrap;word-break:break-word;text-align:left;font:11px/1.5 var(--mono);color:var(--mut);background:var(--s1);border-radius:10px;padding:10px 12px;margin:12px 0 0}

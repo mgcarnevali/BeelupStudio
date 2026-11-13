@@ -92,8 +92,8 @@
     $('score-court').textContent = optionText('court') || selection.court;
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selection.date || '');
     $('score-date').textContent = m ? `${m[3]}.${m[2]}.${m[1]}` : (selection.date || '—');
-    const t = optionText('time').replace(/\s+(to|a)\s+/i, ' – ');
-    $('score-time').textContent = /\d/.test(t) ? t : selection.time;
+    const hm = /(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/.exec(optionText('time'));
+    $('score-time').textContent = hm ? `${hm[1]} – ${hm[2]}` : selection.time;
     $('score-duration').textContent = '—';
     $('watch-m').href = $('watch').href;
   }
@@ -743,20 +743,68 @@
     $('open-finder').setAttribute('aria-expanded', String(open));
     if (open) $('explorar').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  /* ---------------- Fechas y horarios en el idioma del navegador ---------------- */
+  // Beelup devuelve las etiquetas en el idioma que elige su servidor (en general inglés, a veces
+  // portugués). Sólo se reescribe el texto visible; el valor (fecha AAAA-MM-DD u hora) no cambia.
+  const UI_LOCALE = (() => {
+    for (const tag of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''])) {
+      const base = String(tag).toLowerCase().split('-')[0];
+      if (base === 'es' || base === 'en' || base === 'pt') return { tag, base };
+    }
+    return { tag: 'es-AR', base: 'es' };
+  })();
+  const DATE_WORDS = {
+    es: { today: 'Hoy', yesterday: 'Ayer', tomorrow: 'Mañana', to: 'a' },
+    en: { today: 'Today', yesterday: 'Yesterday', tomorrow: 'Tomorrow', to: 'to' },
+    pt: { today: 'Hoje', yesterday: 'Ontem', tomorrow: 'Amanhã', to: 'às' }
+  }[UI_LOCALE.base];
+  // Palabras relativas que puede mandar Beelup (las calcula con el huso horario del club).
+  const RELATIVE = { TODAY: 'today', HOY: 'today', HOJE: 'today', OGGI: 'today', YESTERDAY: 'yesterday', AYER: 'yesterday', ONTEM: 'yesterday', IERI: 'yesterday', TOMORROW: 'tomorrow', MANANA: 'tomorrow', AMANHA: 'tomorrow', DOMANI: 'tomorrow' };
+  let dayFormat = null;
+  try { dayFormat = new Intl.DateTimeFormat(UI_LOCALE.tag, { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }); } catch { dayFormat = null; }
+  const splitSuffix = text => { const i = text.indexOf(' · '); return i < 0 ? [text, ''] : [text.slice(0, i), text.slice(i)]; };
+  function dateLabel(value, apiText) {
+    const [label, suffix] = splitSuffix(apiText);
+    const word = label.trim().split(/\s+/)[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    if (RELATIVE[word]) return DATE_WORDS[RELATIVE[word]] + suffix;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!m || !dayFormat) return apiText;
+    const text = dayFormat.format(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return text.charAt(0).toLocaleUpperCase(UI_LOCALE.tag) + text.slice(1) + suffix;
+  }
+  function timeLabel(apiText) {
+    const [label, suffix] = splitSuffix(apiText);
+    const hm = /(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/.exec(label);
+    return hm ? `${hm[1]} ${DATE_WORDS.to} ${hm[2]}${suffix}` : apiText;
+  }
+  function localizeOptions(select, make) {
+    for (const o of select.options) {
+      if (!o.value) continue; // los textos guía («Elegí…») no vienen de la API
+      if (o.dataset.apiLabel === undefined) o.dataset.apiLabel = o.textContent;
+      const text = make(o.value, o.dataset.apiLabel);
+      if (o.textContent !== text) o.textContent = text;
+    }
+  }
+  const dateSel = $('date');
+  const localizeDates = () => localizeOptions(dateSel, dateLabel);
+  new MutationObserver(localizeDates).observe(dateSel, { childList: true });
+  localizeDates();
+
   // Horarios como botones en móvil (reflejan el <select id="time">).
   const timeSel = $('time');
   function renderTimeChips() {
+    localizeOptions(timeSel, (value, apiText) => timeLabel(apiText));
     const box = $('time-chips');
     const opts = [...timeSel.options].filter(o => o.value);
     box.replaceChildren();
     const wrap = timeSel.closest('.pk-time');
     wrap.classList.toggle('has-chips', opts.length > 0 && !timeSel.disabled);
-    wrap.querySelector('.pk-body').dataset.label = timeSel.value ? timeSel.selectedOptions[0].textContent.replace(/\s+to\s+/i, ' a ') : 'Elegí un horario';
+    wrap.querySelector('.pk-body').dataset.label = timeSel.value ? timeSel.selectedOptions[0].textContent : 'Elegí un horario';
     for (const o of opts) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'chip-t';
       b.textContent = o.value;
-      b.setAttribute('aria-label', o.textContent.replace(/\s+to\s+/i, ' a '));
+      b.setAttribute('aria-label', o.textContent);
       b.setAttribute('aria-pressed', String(o.value === timeSel.value));
       b.addEventListener('click', () => { timeSel.value = o.value; timeSel.dispatchEvent(new Event('change', { bubbles: true })); renderTimeChips(); });
       box.append(b);
@@ -876,5 +924,5 @@
   syncMode();
 
   // Exponer para pruebas automatizadas.
-  window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; }, get shareClip() { return shareClip; }, get playerPlaylistInfo() { return playerPlaylistInfo; }, phrases: PHRASES };
+  window.__beelupStudio = { get segments() { return segments; }, get duration() { return duration; }, get shareClip() { return shareClip; }, get playerPlaylistInfo() { return playerPlaylistInfo; }, locale: UI_LOCALE, phrases: PHRASES };
 })();

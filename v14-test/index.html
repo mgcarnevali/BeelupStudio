@@ -120,6 +120,7 @@
   </section>
 
   <div class="studio-grid">
+   <div class="ed-left">
    <div class="video-stage" id="video-stage">
     <video id="native-video" playsinline preload="metadata"></video>
     <div id="video-placeholder" class="video-placeholder">Cargando video…</div>
@@ -170,7 +171,9 @@
     <button id="rec-btn" class="rec-btn" type="button"><i aria-hidden="true"></i><span id="rec-label">Grabar jugada</span><em id="rec-time"></em></button>
     <p id="rec-hint" class="rec-hint">Tocá cuando empieza la jugada y otra vez cuando termina.</p>
    </div>
+   </div>
 
+   <div class="ed-right">
    <section id="studio-editor" class="clip is-empty hidden" aria-label="Tu jugada">
     <div class="clip-head"><span class="label-cond">Tu jugada</span><span class="du" title="Duración de la jugada"><span class="sr-only">Duración de la jugada </span><strong id="clip-length">05:00</strong></span></div>
     <p class="clip-empty" id="clip-empty"><span class="ce-idle">Todavía no grabaste ninguna jugada. Buscá el momento con la línea de tiempo o ⏪ ⏩ y tocá <b>Grabar jugada</b>. <button type="button" class="link-btn" id="clip-write">O escribí los tiempos</button></span><span class="ce-rec">Grabando la jugada… Tocá <b>Terminar jugada</b> cuando termine.</span></p>
@@ -239,6 +242,7 @@
     <div id="export-card" class="export-card hidden"><svg class="i ec-ok"><use href="#i-check"/></svg><svg class="i ec-err"><use href="#i-alert"/></svg><div class="ec-body"><p id="export-status" role="status"></p></div></div>
     <p class="export-hint">Video H.264 y audio AAC originales · sin recodificar</p>
    </section>
+   </div>
   </div>
  </main>
 

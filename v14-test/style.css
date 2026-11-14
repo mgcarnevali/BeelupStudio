@@ -797,3 +797,32 @@ body.has-match .home-demo{display:none}
  body.has-match .score-meta b{font-size:14px;font-family:Inter,sans-serif;font-weight:500;letter-spacing:0}
  body.has-match .studio-message{font-size:12.5px}
 }
+
+/* ══ Estructura del editor: dos columnas independientes ══
+   Izquierda (.ed-left): video → línea de tiempo → «Grabar jugada».
+   Derecha (.ed-right): «Tu jugada» → descarga → WhatsApp.
+   La altura de una columna no afecta a la otra. En tablet y móvil se apilan (izquierda y después derecha). */
+.ed-left,.ed-right{min-width:0}
+@media (min-width:1100px){
+ body.has-match .studio-grid{grid-template-areas:"left right";grid-template-rows:auto;align-items:start}
+ .ed-left{grid-area:left}
+ .ed-right{grid-area:right}
+}
+
+/* ══ Buscador de escritorio: reparto del ancho y alineación ══
+   Todos los campos crecen en proporción (no sólo Club) y los valores — botones en País/Club y
+   selectores en Cancha/Fecha/Horario — tienen la misma altura de línea en cualquier sistema. */
+@media (min-width:1100px){
+ .pk-country{flex:0 0 150px;width:auto}
+ .pk-club{flex:2.4 1 280px;width:auto;min-width:224px}
+ .pk-court,.pk-time{flex:1 0 216px;width:auto}
+ .pk-date{flex:1 0 228px;width:auto}
+ .pk select,.pk-btn{height:18px;line-height:18px;margin-top:2px;padding:0;text-indent:0;vertical-align:top}
+ .pk-btn.long{height:auto;margin-top:1px}
+}
+@media (min-width:1100px) and (max-width:1219px){
+ .pk-country{flex-basis:124px}
+ .pk-club{flex-basis:198px;min-width:198px}
+ .pk-court,.pk-time{flex-basis:190px}
+ .pk-date{flex-basis:202px}
+}

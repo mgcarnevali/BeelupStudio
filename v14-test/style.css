@@ -555,8 +555,8 @@ body.has-match .home-demo{display:none}
 }
 
 /* ══ Editor v1.5: Grabar jugada → Terminar → Ajustar → Descargar ══ */
-.studio-grid{grid-template-areas:"video clip" "video export" "tl export" "rec export";grid-template-rows:auto auto auto auto}
-@media (min-width:1100px){.studio-grid{align-items:start}.export{align-self:start}}
+.studio-grid{grid-template-areas:"video rec" "video clip" "video export" "tl export";grid-template-rows:auto auto auto 1fr}
+@media (min-width:1100px){.studio-grid{align-items:start}.export{align-self:start}.rec-row{margin:0 0 16px}.rec-btn{width:100%}.rec-btn.again{width:100%}}
 .rec-row{grid-area:rec}
 /* Reproductor */
 .video-stage{touch-action:pan-y}

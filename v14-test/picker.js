@@ -5,6 +5,7 @@
 (() => {
   const mobile = matchMedia('(max-width:1099px)');
   const coarse = matchMedia('(pointer:coarse)');
+  const measure = document.createElement('canvas').getContext('2d');
   const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('es');
   const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -46,15 +47,29 @@
     const input = pop.querySelector('input'), list = pop.querySelector('.pk-list'), count = pop.querySelector('.pk-count');
 
     let items = [], shown = [], active = -1;
-    const api = { pop, pk };
+    const api = { pop, pk, fit: () => fitText() };
 
     function refreshButton() {
       const opt = select.selectedOptions[0];
       btn.textContent = opt ? opt.text : '';
       btn.classList.toggle('ph', !select.value);
+      fitText();
       btn.disabled = select.disabled;
       pk.classList.toggle('pk-off', select.disabled);
       if (select.disabled && openPicker === api) close(false);
+    }
+    // Nombres largos (p. ej. algunos clubes): en vez de cortarse, pasan a dos líneas (y en escritorio,
+    // si aun así no entran, a una letra un poco menor). Se mide el texto, no el botón.
+    function fitText() {
+      btn.classList.remove('long', 'xlong');
+      if (!btn.offsetWidth || !btn.textContent) return;
+      const cs = getComputedStyle(btn);
+      measure.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const room = btn.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (measure.measureText(btn.textContent).width <= room + 1) return;
+      btn.classList.add('long');
+      const lh = parseFloat(getComputedStyle(btn).lineHeight);
+      if (lh && btn.scrollHeight > lh * 2 + 1) btn.classList.add('xlong');
     }
     function readItems() {
       items = [...select.options].filter(o => o.value !== '').map(o => ({ value: o.value, text: o.text, key: fold(o.text) }));
@@ -157,13 +172,18 @@
     return api;
   }
 
-  enhance('country', { title: 'País', placeholder: 'Buscar país', noun: 'países' });
-  enhance('club', { title: 'Club', placeholder: 'Buscar club', noun: 'clubes' });
+  const pickers = [
+    enhance('country', { title: 'País', placeholder: 'Buscar país', noun: 'países' }),
+    enhance('club', { title: 'Club', placeholder: 'Buscar club', noun: 'clubes' })
+  ];
 
   document.addEventListener('pointerdown', e => {
     if (openPicker && !openPicker.pk.contains(e.target)) openPicker.close(false);
   });
   window.visualViewport?.addEventListener('resize', () => openPicker?.fitViewport());
+  // Al cambiar el ancho (ventana, escalado, giro), cada botón vuelve a medir su texto.
+  addEventListener('resize', () => pickers.forEach(p => p.fit()));
+  document.fonts?.ready.then(() => pickers.forEach(p => p.fit()));
   window.visualViewport?.addEventListener('scroll', () => openPicker?.fitViewport());
   mobile.addEventListener('change', () => openPicker?.close(false));
 })();

@@ -44,7 +44,7 @@ a{color:inherit;text-decoration:none}
 
 .finder{flex:1;min-width:0;display:flex;justify-content:center}
 .finder-intro{display:none}
-.picker{flex:1;max-width:1100px;display:flex;align-items:center;height:56px;border-radius:28px;background:var(--s1);padding:0 8px 0 6px}
+.picker{flex:1;min-width:0;max-width:1100px;display:flex;align-items:center;height:56px;border-radius:28px;background:var(--s1);padding:0 8px 0 6px}
 .pk{position:relative;display:flex;align-items:center;gap:10px;height:42px;padding:0 16px;border-right:1px solid #232a30;min-width:0;cursor:pointer}
 .pk-n,.pk-c{display:none}
 .pk>.i{color:var(--dim);width:17px;height:17px}
@@ -669,6 +669,24 @@ body.has-match .home-demo{display:none}
  .name-toggle{margin-bottom:8px}
 }
 
+/* ══ Buscador en escritorio intermedio (1100–1599 px CSS), en el Home y en el editor ══
+   El buscador no entra en una sola fila con el logo: pasa a una fila propia de ancho completo,
+   con anchos medidos para que ningún campo corte su texto. */
+@media (min-width:1100px) and (max-width:1599px){
+ .wordmark span{display:inline}
+ .conn #connection{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+ .picker{max-width:none}
+ .pk{padding:0 16px;gap:10px}
+ .pk-country{width:150px}
+ .pk-club{min-width:224px}
+ .pk-date{width:228px}
+ .pk-court,.pk-time{width:216px}
+ /* Editor: logo y botones arriba, buscador debajo en su propia fila. */
+ body.has-match .topbar{flex-wrap:wrap;height:auto;column-gap:20px;row-gap:12px;padding:12px 0 0}
+ body.has-match .wordmark{height:40px;align-items:center}
+ body.has-match .finder{order:3;flex-basis:100%}
+}
+
 /* ══ Home en escritorio intermedio (1100–1599 px CSS, p. ej. 1920×1080 al 150 % = 1280 px) ══
    El buscador no entra en una sola fila con el logo: pasa a una fila propia de ancho completo.
    El encabezado y el buscador se vuelven «display:contents» para ubicar logo, buscador, título y
@@ -678,15 +696,8 @@ body.has-match .home-demo{display:none}
   grid-template-areas:"logo right" "picker picker" "status status" "intro intro" "demo demo" "foot foot";min-height:0}
  body:not(.has-match) .topbar,body:not(.has-match) .finder{display:contents}
  body:not(.has-match) .wordmark{grid-area:logo;height:64px;align-self:center;align-items:center}
- body:not(.has-match) .wordmark span{display:inline}
  body:not(.has-match) .topbar-right{grid-area:right;align-self:center}
- body:not(.has-match) .conn #connection{position:static;width:auto;height:auto;overflow:visible;clip:auto}
- body:not(.has-match) .picker{grid-area:picker;max-width:none}
- body:not(.has-match) .pk{padding:0 16px;gap:10px}
- body:not(.has-match) .pk-country{width:150px}
- body:not(.has-match) .pk-club{min-width:224px}
- body:not(.has-match) .pk-date{width:228px}
- body:not(.has-match) .pk-court,body:not(.has-match) .pk-time{width:216px}
+ body:not(.has-match) .picker{grid-area:picker}
  body:not(.has-match) .finder-status{grid-area:status;position:static;transform:none;max-width:none;margin:10px 0 0;white-space:normal;justify-content:center}
  body:not(.has-match) .finder-intro{grid-area:intro;position:static;transform:none;max-width:none;margin:44px 0 0}
  body:not(.has-match) .finder-intro h1{font-size:clamp(64px,6.6vw,96px)}
@@ -712,11 +723,11 @@ body.has-match .home-demo{display:none}
 
 /* 1100–1219 px: sin los íconos de cada campo, para que los textos entren completos. */
 @media (min-width:1100px) and (max-width:1219px){
- body:not(.has-match) .pk>.i{display:none}
- body:not(.has-match) .pk-country{width:124px}
- body:not(.has-match) .pk-club{min-width:198px}
- body:not(.has-match) .pk-date{width:202px}
- body:not(.has-match) .pk-court,body:not(.has-match) .pk-time{width:190px}
+ .pk>.i{display:none}
+ .pk-country{width:124px}
+ .pk-club{min-width:198px}
+ .pk-date{width:202px}
+ .pk-court,.pk-time{width:190px}
 }
 /* Desde 1600 px el buscador va en la misma fila que el logo: anchos medidos para que ningún texto se corte. */
 @media (min-width:1600px){
@@ -726,3 +737,11 @@ body.has-match .home-demo{display:none}
  .pk-date{width:228px}
  .pk-court,.pk-time{width:216px}
 }
+
+/* Club o país con nombre muy largo: dos líneas en vez de cortarse (lo decide picker.js midiendo el texto). */
+.pk-btn.long{white-space:normal;text-overflow:clip;font-size:12px;line-height:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pk-btn.long.xlong{font-size:11px;line-height:12.5px}
+/* En tablet y móvil el campo crece en alto: el nombre usa las líneas que necesite. */
+@media (max-width:1099px){.pk-btn.long,.pk-btn.long.xlong{display:block;-webkit-line-clamp:unset;font-size:14px;line-height:18px;padding-top:2px}}
+/* Desde 1760 px sobra lugar en la fila del logo: el buscador se ensancha y Club gana espacio. */
+@media (min-width:1760px){.picker{max-width:1320px}}

@@ -389,11 +389,13 @@
       progress('');
       showControls();
       message('Video listo. Tocá «Grabar jugada» cuando empiece la jugada.');
+      window.dispatchEvent(new CustomEvent('beelup:player', { detail: { ok: true } }));
       renderRuler(); update(); syncPlayer();
     } catch (e) {
       if (version !== loadVersion) return;
       const text = e.status === 403 ? 'Este partido requiere acceso en Beelup.' : e.message;
       message('No se pudo cargar el video: ' + text, 'err');
+      window.dispatchEvent(new CustomEvent('beelup:player', { detail: { ok: false, text } }));
       $('video-placeholder').textContent = 'No se pudo cargar el video';
       $('player-error').classList.remove('hidden');
       console.warn(e);

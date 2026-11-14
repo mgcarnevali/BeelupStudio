@@ -5,6 +5,7 @@ let clubs = [], requestId = 0;
 const currentCountry = () => $('country').value;
 const countryCode = () => $('country').selectedOptions[0].dataset.code;
 function status(message) { $('status').textContent = message; }
+const LOADING_PLAYER = 'Partido seleccionado. Cargando el reproductor de Beelup Studio…';
 function options(id, items, placeholder) {
   const select = $(id); select.replaceChildren(new Option(placeholder, ''));
   for (const item of items) select.add(new Option(item.Nombre + (item.Tipo && item.Tipo !== 'OK' ? ' · ' + item.Tipo : ''), item.Valor));
@@ -196,7 +197,13 @@ $('find').addEventListener('click', () => {
   $('result').classList.remove('hidden');
   window.dispatchEvent(new CustomEvent('beelup:selection', {detail:{club,court,date,time,code:countryCode()}}));
   $('result').scrollIntoView({ behavior: 'smooth' });
-  status('Partido seleccionado. Cargando el reproductor de Beelup Studio…');
+  status(LOADING_PLAYER);
+});
+// Resultado de la carga del partido: el aviso «Cargando…» se quita al estar listo o se reemplaza por el error.
+// Sólo se toca el mensaje si sigue siendo el de carga (si el usuario ya empezó otra búsqueda, no se pisa).
+window.addEventListener('beelup:player', e => {
+  if ($('status').textContent !== LOADING_PLAYER) return;
+  status(e.detail.ok ? '' : `No se pudo cargar el partido: ${e.detail.text}`);
 });
 loadCountry();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});

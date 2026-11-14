@@ -593,10 +593,11 @@
   function syncClipState() {
     $('studio-editor').classList.toggle('is-empty', !hasClip || !!rec);
     $('studio-editor').classList.toggle('is-rec', !!rec);
+    $('timeline').classList.toggle('no-clip', !hasClip && !rec);
     const m = mode();
     if (!busy) {
       $('download').disabled = !hasClip && !m.full;
-      if (!hasClip && !m.full) setDownloadLabel('Grabá una jugada para descargarla');
+      if (!hasClip && !m.full) setDownloadLabel('Primero grabá una jugada');
       $('bardo-go').disabled = !SHARE_SUPPORTED || !hasClip;
     }
   }

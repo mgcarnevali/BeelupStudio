@@ -5,11 +5,18 @@ let clubs = [], requestId = 0;
 const currentCountry = () => $('country').value;
 const countryCode = () => $('country').selectedOptions[0].dataset.code;
 function status(message) { $('status').textContent = message; }
-const LOADING_PLAYER = 'Partido seleccionado. Cargando el reproductor de Beelup Studio…';
+// Las instrucciones van dentro de cada campo; debajo de la barra sólo se muestran errores.
+const NEXT_FIELDS = ['club', 'court', 'date', 'time'];
+function markNext() {
+  const next = NEXT_FIELDS.find(id => !$(id).disabled && !$(id).value);
+  for (const id of NEXT_FIELDS) $(id).closest('.pk').classList.toggle('pk-next', id === next);
+}
+function setCount(n) { $('club-count').textContent = n == null ? '' : `· ${n} disponibles`; }
 function options(id, items, placeholder) {
   const select = $(id); select.replaceChildren(new Option(placeholder, ''));
   for (const item of items) select.add(new Option(item.Nombre + (item.Tipo && item.Tipo !== 'OK' ? ' · ' + item.Tipo : ''), item.Valor));
   select.disabled = items.length === 0;
+  markNext();
 }
 
 // ── Tolerancia a fallas de la búsqueda (v1.4.1) ──
@@ -137,56 +144,58 @@ async function runStep(level, action, args, done) {
 function resetAfter(level) {
   cancelTask(level + 1);
   const fields = ['club','court','date','time'];
-  const hints = ['Seleccionar club','Elegí un club primero','Elegí una cancha primero','Elegí una fecha primero'];
+  const hints = ['Seleccionar club','Seleccionar cancha','Seleccionar fecha','Seleccionar horario'];
   for (let i = level + 1; i < fields.length; i++) options(fields[i], [], hints[i]);
   $('find').disabled = true; $('result').classList.add('hidden');
 }
 function showClubs() {
-  options('club', clubs, `${clubs.length} clubes · Seleccionar`);
+  options('club', clubs, 'Seleccionar club');
+  setCount(clubs.length);
   resetAfter(0);
 }
 function loadCountry() {
   clubs = [];
   options('club', [], 'Cargando clubes…');
+  setCount(null);
   resetAfter(-1);
   $('connection').textContent = 'Comprobando…';
   const country = $('country').selectedOptions[0].text;
-  status(`Cargando clubes de ${country}…`);
+  status('');
   return runStep(0, 'complejos', [], data => {
     clubs = data;
     showClubs();
-    status(`${clubs.length} clubes disponibles en ${country}.`);
+    status('');
   });
 }
 $('country').addEventListener('change', loadCountry);
 $('club').addEventListener('change', () => {
   resetAfter(0); if (!$('club').value) return;
   const club = $('club').value;
-  status('Cargando canchas…');
-  runStep(1, 'canchas', [club], data => { options('court', data, 'Seleccionar cancha'); status('Seleccioná una cancha.'); });
+  status(''); options('court', [], 'Cargando canchas…');
+  runStep(1, 'canchas', [club], data => { options('court', data, 'Seleccionar cancha'); });
 });
 $('court').addEventListener('change', () => {
   resetAfter(1); if (!$('court').value) return;
   const club = $('club').value, court = $('court').value;
-  status('Cargando fechas…');
-  runStep(2, 'fechas', [club, court], data => { options('date', data, 'Seleccionar fecha'); status('Seleccioná una fecha.'); });
+  status(''); options('date', [], 'Cargando fechas…');
+  runStep(2, 'fechas', [club, court], data => { options('date', data, 'Seleccionar fecha'); });
 });
 $('date').addEventListener('change', () => {
   resetAfter(2); if (!$('date').value) return;
   const club = $('club').value, court = $('court').value, date = $('date').value;
-  status('Cargando horarios…');
-  runStep(3, 'horas', [club, court, date], data => { options('time', data.filter(x => !x.Tipo || x.Tipo.toUpperCase() === 'OK'), 'Seleccionar horario'); status('Seleccioná un horario disponible.'); });
+  status(''); options('time', [], 'Cargando horarios…');
+  runStep(3, 'horas', [club, court, date], data => { options('time', data.filter(x => !x.Tipo || x.Tipo.toUpperCase() === 'OK'), 'Seleccionar horario'); });
 });
 $('retry').addEventListener('click', () => {
   const fn = retryStep; if (!fn) return;
   setRetry(null);
   $('connection').textContent = 'Comprobando…';
-  status('Reintentando…');
+  status('');
   fn();
 });
 // Al volver la conexión, se repite automáticamente el paso que había fallado.
 window.addEventListener('online', () => { if (retryStep) $('retry').click(); });
-$('time').addEventListener('change', () => { $('find').disabled = !$('time').value; });
+$('time').addEventListener('change', () => { $('find').disabled = !$('time').value; markNext(); });
 $('find').addEventListener('click', () => {
   const club = $('club').value, court = $('court').value, date = $('date').value, time = $('time').value;
   if (!club || !court || !date || !time) return;
@@ -197,13 +206,12 @@ $('find').addEventListener('click', () => {
   $('result').classList.remove('hidden');
   window.dispatchEvent(new CustomEvent('beelup:selection', {detail:{club,court,date,time,code:countryCode()}}));
   $('result').scrollIntoView({ behavior: 'smooth' });
-  status(LOADING_PLAYER);
+  status('');
 });
 // Resultado de la carga del partido: el aviso «Cargando…» se quita al estar listo o se reemplaza por el error.
 // Sólo se toca el mensaje si sigue siendo el de carga (si el usuario ya empezó otra búsqueda, no se pisa).
 window.addEventListener('beelup:player', e => {
-  if ($('status').textContent !== LOADING_PLAYER) return;
-  status(e.detail.ok ? '' : `No se pudo cargar el partido: ${e.detail.text}`);
+  if (!e.detail.ok) status(`No se pudo cargar el partido: ${e.detail.text}`);
 });
 loadCountry();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});

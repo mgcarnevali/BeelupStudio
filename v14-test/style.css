@@ -826,3 +826,19 @@ body.has-match .home-demo{display:none}
  .pk-court,.pk-time{flex-basis:190px}
  .pk-date{flex-basis:202px}
 }
+
+/* ══ Instrucciones dentro de cada campo del buscador ══
+   El valor muestra lo que hay que elegir («Seleccionar cancha»…); el campo que sigue se resalta
+   en lima y la cantidad de clubes va junto a la etiqueta CLUB. Sin mensajes debajo de la barra. */
+.pk-count{text-transform:none;letter-spacing:.2px;font-weight:500;color:var(--dim)}
+.pk-next .pk-k{color:var(--lime)}
+.pk-next .pk-count{color:#c4f54aa6}
+.pk-next select,.pk-next .pk-btn{color:var(--tx)}
+.pk select:disabled{color:#4f5753}
+.pk-off .pk-btn,.pk-btn:disabled{color:#4f5753}
+@media (max-width:1099px){ .pk-next{box-shadow:inset 0 0 0 1px #c4f54a59} }
+.pk-count{margin-left:6px}
+.pk-count:empty{display:none}
+/* El fondo de foco sólo con teclado (no queda gris después de elegir con el mouse o el dedo). */
+.pk:focus-within:not(:has(:focus-visible)):not(.pk-open){background:none}
+@media (max-width:1099px){ .pk:focus-within:not(:has(:focus-visible)):not(.pk-open){background:var(--s1)} }

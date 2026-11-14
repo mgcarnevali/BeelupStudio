@@ -17,7 +17,9 @@
 
   const video = $('native-video');
   const stage = $('video-stage');
-  const studioParts = ['studio-editor', 'timeline', 'clip-actions', 'export'];
+  const studioParts = ['studio-editor', 'timeline', 'rec-row', 'export'];
+  // Editor: jugada grabada o escrita, grabación en curso y extremo que se está ajustando ('in' | 'out').
+  let hasClip = false, rec = null, adj = null;
 
   /* ---------------- Iconos (sprite SVG de index.html) ---------------- */
   const setIcon = (id, name) => {
@@ -117,8 +119,9 @@
       $('trim-in').value = a; $('trim-out').value = b;
       const left = a / duration * 100, width = Math.min(b - a, duration - a) / duration * 100;
       const hl = $('trim-highlight');
-      hl.style.left = `${left}%`;
-      hl.style.width = `${width}%`;
+      const vl = Math.max(0, Math.min(100, vx(a))), vr = Math.max(0, Math.min(100, vx(Math.min(b, duration))));
+      hl.style.left = `${vl}%`;
+      hl.style.width = `${vr - vl}%`;
       $('seek-range').style.left = `${left}%`;
       $('seek-range').style.width = `${width}%`;
       $('fl-in').textContent = short(a); $('fl-out').textContent = short(b);
@@ -128,6 +131,7 @@
       hl.querySelector('.fl-b').classList.toggle('near-b', narrow);
       placeLabels(); requestAnimationFrame(placeLabels);
     }
+    renderEdit(valid ? { a, b } : null);
     return valid ? { a, b } : null;
   }
 
@@ -148,29 +152,36 @@
     a.style.marginLeft = da + 'px'; b.style.marginLeft = db + 'px';
   }
 
+  // Vista de la línea de tiempo: el partido completo, o una ventana corta mientras se ajusta INICIO o FIN.
+  let view = null;
+  const vA = () => view ? view.a : 0, vB = () => view ? view.b : duration;
+  const vx = t => (t - vA()) / ((vB() - vA()) || 1) * 100;
   function renderRuler() {
     const ruler = $('tl-ruler');
     ruler.replaceChildren();
     if (!duration) return;
-    const min = duration / 60;
-    const minor = min <= 70 ? 1 : min <= 150 ? 5 : 10;
-    const major = min <= 12 ? 2 : min <= 70 ? 5 : min <= 150 ? 15 : 30;
+    const a = vA(), b = vB(), span = b - a, w = $('trim-track').clientWidth || 600;
+    const STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+    const major = STEPS.find(st => st / span * w >= (view ? 64 : 80)) || 3600;
+    const minor = STEPS.find(st => st / span * w >= 7 && major % st === 0) || major;
     const frag = document.createDocumentFragment();
-    for (let m = 0; m * 60 <= duration; m += minor) {
-      const x = m * 60 / duration * 100;
+    for (let t = Math.ceil(a / minor) * minor; t <= b + 1e-6; t += minor) {
+      const x = (t - a) / span * 100;
+      const isMajor = t % major === 0;
       const tick = document.createElement('span');
-      tick.className = 'tick' + (m % major === 0 ? ' major' : '');
+      tick.className = 'tick' + (isMajor ? ' major' : '');
       tick.style.left = x + '%';
       frag.append(tick);
-      if (m % major === 0 && x < 97) {
+      if (isMajor && x < 97) {
         const label = document.createElement('span');
-        label.className = 'tlabel' + (m === 0 ? ' first' : '');
+        label.className = 'tlabel' + (x < 2 ? ' first' : '');
         label.style.left = x + '%';
-        label.textContent = short(m * 60);
+        label.textContent = short(t);
         frag.append(label);
       }
     }
     ruler.append(frag);
+    $('tl-range').textContent = view ? `${short(a)} – ${short(b)}` : '';
   }
 
   function suggestedName() {
@@ -215,8 +226,11 @@
     if (!seekDragging) $('seek').value = video.currentTime || 0;
     const pct = total ? Math.min(100, shown / total * 100) : 0;
     $('seek').style.setProperty('--progress', pct + '%');
-    $('tl-cursor').style.left = pct + '%';
-    $('tl-played').style.width = pct + '%';
+    const vp = vx(shown);
+    $('tl-cursor').style.left = Math.max(0, Math.min(100, vp)) + '%';
+    $('tl-cursor').classList.toggle('out', vp < 0 || vp > 100);
+    $('tl-played').style.width = Math.max(0, Math.min(100, vp)) + '%';
+    syncLive(shown);
     setIcon('mute', video.muted || video.volume === 0 ? 'mute' : 'volume');
     $('volume').value = video.muted ? 0 : video.volume;
     const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -229,8 +243,8 @@
     previewing = false;
     setIcon('preview-clip', 'play');
     $('preview-clip').classList.remove('on');
-    $('preview-clip').querySelector('.pv-label').textContent = 'Vista previa';
-    $('preview-clip').setAttribute('aria-label', 'Reproducir recorte');
+    $('preview-clip').querySelector('.pv-label').textContent = 'Ver la jugada';
+    $('preview-clip').setAttribute('aria-label', 'Ver la jugada');
   }
 
   function showStudio(on) {
@@ -323,7 +337,7 @@
           $('player-error').classList.remove('hidden');
         }
       });
-      hls.on(Hls.Events.FRAG_BUFFERED, () => { if (/reintentando/.test($('studio-message').textContent)) message('Video listo. Elegí el fragmento o descargá el partido completo.'); });
+      hls.on(Hls.Events.FRAG_BUFFERED, () => { if (/reintentando/.test($('studio-message').textContent)) message('Video listo. Tocá «Grabar jugada» cuando empiece la jugada.'); });
       hls.loadSource(playlistBlob);
       hls.attachMedia(video);
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -369,11 +383,12 @@
       $('trim-in').value = 0; $('trim-out').value = Math.floor(Math.min(300, duration));
       $('export-name').value = suggestedName();
       renderName();
+      resetEditor();
       $('video-placeholder').classList.add('hidden');
       $('player-error').classList.add('hidden');
       progress('');
       showControls();
-      message('Video listo. Elegí el fragmento o descargá el partido completo.');
+      message('Video listo. Tocá «Grabar jugada» cuando empiece la jugada.');
       renderRuler(); update(); syncPlayer();
     } catch (e) {
       if (version !== loadVersion) return;
@@ -448,8 +463,9 @@
   video.addEventListener('dblclick', () => { if (pointerTypeDown === 'mouse') toggleFullscreen(); });
 
   $('play-toggle').addEventListener('click', togglePlay);
-  $('skip-back').addEventListener('click', () => seekTo(video.currentTime - 10));
-  $('skip-forward').addEventListener('click', () => seekTo(video.currentTime + 10));
+  // ⏪ ⏩: 10 s; mientras se ajusta INICIO o FIN, mueven ese extremo de a 1 segundo.
+  $('skip-back').addEventListener('click', () => adj ? nudge(-1) : seekTo(video.currentTime - 10));
+  $('skip-forward').addEventListener('click', () => adj ? nudge(1) : seekTo(video.currentTime + 10));
 
   // Barra de posición: durante el arrastre sólo se actualiza el reloj; se busca al soltar.
   const seek = $('seek');
@@ -484,7 +500,7 @@
   stage.tabIndex = 0;
   stage.addEventListener('keydown', e => {
     if (!duration || e.target.matches('input[type=text], select')) return;
-    const keys = { ' ': togglePlay, k: togglePlay, ArrowLeft: () => seekTo(video.currentTime - 5), ArrowRight: () => seekTo(video.currentTime + 5), j: () => seekTo(video.currentTime - 10), l: () => seekTo(video.currentTime + 10), f: toggleFullscreen, m: () => { video.muted = !video.muted; syncPlayer(); } };
+    const keys = { ' ': togglePlay, k: togglePlay, ArrowLeft: () => adj ? nudge(-1) : seekTo(video.currentTime - 5), ArrowRight: () => adj ? nudge(1) : seekTo(video.currentTime + 5), r: toggleRec, R: toggleRec, Escape: () => adj && exitAdjust(), j: () => seekTo(video.currentTime - 10), l: () => seekTo(video.currentTime + 10), f: toggleFullscreen, m: () => { video.muted = !video.muted; syncPlayer(); } };
     if (e.target === seek && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
     const fn = keys[e.key];
     if (fn) { e.preventDefault(); fn(); showControls(); }
@@ -569,6 +585,226 @@
     $('preview-clip').setAttribute('aria-label', 'Detener vista previa');
   });
 
+  /* ---------------- Grabar jugada, ajustar INICIO/FIN, zoom del video ---------------- */
+  // Grabar: primer toque marca el inicio y el segundo el fin. Ajustar: la línea de tiempo hace zoom
+  // alrededor del extremo elegido y ⏪ ⏩ lo mueven de a 1 segundo. Los valores se guardan en
+  // #clip-start / #clip-end con setTrim(), igual que antes: la exportación no cambia.
+  const recBtn = $('rec-btn');
+  function syncClipState() {
+    $('studio-editor').classList.toggle('is-empty', !hasClip || !!rec);
+    $('studio-editor').classList.toggle('is-rec', !!rec);
+    const m = mode();
+    if (!busy) {
+      $('download').disabled = !hasClip && !m.full;
+      if (!hasClip && !m.full) setDownloadLabel('Grabá una jugada para descargarla');
+      $('bardo-go').disabled = !SHARE_SUPPORTED || !hasClip;
+    }
+  }
+  function resetEditor() {
+    rec = null; adj = null; view = null; hasClip = false;
+    setVideoZoom(1);
+    syncRec(); syncAdjust(); syncClipState(); renderRuler(); update();
+  }
+  function syncRec() {
+    recBtn.classList.toggle('on', !!rec);
+    $('rec-label').textContent = rec ? 'Terminar jugada' : hasClip ? 'Grabar otra jugada' : 'Grabar jugada';
+    recBtn.classList.toggle('again', !rec && hasClip);
+    $('rec-hint').textContent = rec ? 'Tocá de nuevo cuando termine la jugada.' : hasClip ? '' : 'Tocá cuando empieza la jugada y otra vez cuando termina.';
+    $('rec-badge').classList.toggle('hidden', !rec);
+    $('timeline').classList.toggle('recording', !!rec);
+    if (!rec) $('rec-time').textContent = '';
+  }
+  // Hora del partido, contador REC y tramo que se está grabando (se llama desde syncPlayer).
+  function syncLive(now) {
+    if (selection?.time) {
+      const [h, m] = selection.time.split(':').map(Number);
+      $('match-clock').querySelector('span').textContent = fmt(((h * 3600 + m * 60 + Math.floor(now)) % 86400));
+      $('match-clock').classList.remove('hidden');
+    }
+    if (rec) {
+      const len = Math.max(0, Math.floor(now) - rec.start);
+      $('rec-time').textContent = short(len);
+      $('rec-badge').querySelector('span').textContent = short(len);
+      const hl = $('trim-highlight');
+      const l = Math.max(0, Math.min(100, vx(Math.min(rec.start, now)))), r = Math.max(0, Math.min(100, vx(Math.max(rec.start, now))));
+      hl.style.left = l + '%'; hl.style.width = (r - l) + '%';
+    }
+  }
+  function toggleRec() {
+    if (!duration) return;
+    if (adj) exitAdjust();
+    if (!rec) {
+      rec = { start: Math.floor(video.currentTime) };
+      stopPreview();
+      if (video.paused) video.play().catch(() => {});
+    } else {
+      let a = rec.start, b = Math.floor(video.currentTime);
+      if (b < a) [a, b] = [b, a];
+      if (b - a < 1) { if (a + 1 <= Math.floor(duration)) b = a + 1; else a = b - 1; }
+      rec = null; hasClip = true;
+      $('clip-start').value = fmt(a); $('clip-end').value = fmt(b);
+      setShareClip(null);
+    }
+    syncRec(); syncClipState(); update(); syncPlayer(); syncMode();
+  }
+  recBtn.addEventListener('click', toggleRec);
+
+  // Ventana del zoom temporal: muestra la jugada entera si entra; si no, se centra en el extremo.
+  function computeView() {
+    const a = seconds($('clip-start').value), b = seconds($('clip-end').value);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return;
+    // Al menos 10 px por segundo: en pantallas angostas la ventana se achica y se centra en el extremo.
+    const maxSpan = Math.max(15, Math.min(120, Math.floor(($('trim-track').clientWidth || 600) / 10)));
+    const len = b - a, span = Math.min(duration, Math.max(15, Math.min(maxSpan, len * 2)));
+    const center = len * 1.25 <= span ? (a + b) / 2 : (adj === 'in' ? a : b);
+    const start = Math.max(0, Math.min(duration - span, Math.round(center - span / 2)));
+    view = { a: start, b: start + span };
+  }
+  const edgeValue = () => seconds($(adj === 'in' ? 'clip-start' : 'clip-end').value);
+  function showEdge() { const t = edgeValue(); if (Number.isFinite(t)) seekTo(t); }
+  function enterAdjust(which) {
+    if (!duration || rec) return;
+    if (!hasClip) { hasClip = true; syncRec(); syncClipState(); }
+    stopPreview();
+    adj = which;
+    video.pause();
+    computeView();
+    showEdge();
+    syncAdjust(); renderRuler(); update(); syncPlayer();
+  }
+  function exitAdjust() {
+    if (!adj) return;
+    adj = null; view = null;
+    syncAdjust(); renderRuler(); update(); syncPlayer();
+  }
+  function nudge(d) {
+    const t = edgeValue();
+    if (!Number.isFinite(t)) return;
+    setTrim(adj, t + d);
+    keepInView(); showEdge();
+  }
+  // Si el extremo sale de la ventana, la ventana lo acompaña.
+  function keepInView() {
+    const t = edgeValue();
+    if (!view || !Number.isFinite(t)) return;
+    const span = view.b - view.a, pad = span * 0.08;
+    if (t < view.a + pad || t > view.b - pad) {
+      const start = Math.max(0, Math.min(duration - span, t - span / 2));
+      view = { a: start, b: start + span };
+      renderRuler(); update();
+    }
+  }
+  function syncAdjust() {
+    const on = !!adj;
+    document.body.classList.toggle('adjusting', on);
+    $('studio-editor').dataset.adj = adj || '';
+    $('num-in').classList.toggle('on', adj === 'in'); $('num-out').classList.toggle('on', adj === 'out');
+    $('adj-badge').textContent = adj === 'in' ? 'Elegí el inicio' : 'Elegí el fin';
+    $('adj-badge').classList.toggle('hidden', !on);
+    $('tl-mode').textContent = adj === 'in' ? 'Ajuste fino · Inicio' : 'Ajuste fino · Fin';
+    $('skip-back').setAttribute('aria-label', on ? 'Mover un segundo antes' : 'Retroceder 10 segundos');
+    $('skip-forward').setAttribute('aria-label', on ? 'Mover un segundo después' : 'Avanzar 10 segundos');
+  }
+  // Perilla del extremo que se ajusta y marca del otro extremo.
+  function renderEdit(r) {
+    const knob = $('tl-knob'), ghost = $('tl-ghost');
+    if (!adj || !r) { knob.classList.add('hidden'); ghost.classList.add('hidden'); return; }
+    const k = vx(adj === 'in' ? r.a : r.b), g = vx(adj === 'in' ? r.b : r.a);
+    knob.style.left = k + '%'; knob.classList.remove('hidden');
+    knob.textContent = adj === 'in' ? 'I' : 'F';
+    ghost.style.left = g + '%'; ghost.classList.toggle('hidden', g < 0 || g > 100);
+  }
+  for (const [id, which] of [['num-in', 'in'], ['num-out', 'out']]) {
+    const box = $(id), input = box.querySelector('input');
+    // Primer toque: ajustar ese extremo. Con el extremo ya elegido, tocar el número permite escribirlo.
+    box.addEventListener('pointerdown', e => { if (adj !== which) { e.preventDefault(); enterAdjust(which); } });
+    box.addEventListener('click', e => { if (adj !== which) e.preventDefault(); });
+    input.addEventListener('focus', () => { if (adj !== which) enterAdjust(which); });
+    input.addEventListener('input', () => { if (!hasClip) { hasClip = true; syncRec(); syncClipState(); } });
+    input.addEventListener('change', () => { if (adj) { computeView(); renderRuler(); update(); showEdge(); } setShareClip(null); });
+  }
+  $('adj-done').addEventListener('click', exitAdjust);
+  $('clip-write').addEventListener('click', () => { enterAdjust('in'); $('clip-start').focus(); });
+
+  // Línea de tiempo: arrastrar navega por el partido; mientras se ajusta, mueve el extremo elegido.
+  const track = $('trim-track');
+  track.addEventListener('pointerdown', e => {
+    if (!duration || e.button > 0 || e.target.closest('.hd')) return;
+    e.preventDefault();
+    track.setPointerCapture(e.pointerId);
+    const rect = track.getBoundingClientRect();
+    const at = ev => vA() + (ev.clientX - rect.left) / rect.width * (vB() - vA());
+    let move, frame = 0;
+    if (adj) {
+      // Si se agarra la perilla, se recuerda dónde (sin salto); si se toca otro punto, el extremo va ahí.
+      const kr = $('tl-knob').getBoundingClientRect();
+      const onKnob = e.clientX >= kr.left - 8 && e.clientX <= kr.right + 8;
+      const offset = onKnob ? at(e) - edgeValue() : 0;
+      move = ev => { setTrim(adj, at(ev) - offset); cancelAnimationFrame(frame); frame = requestAnimationFrame(showEdge); };
+      $('tl-knob').classList.add('active');
+    } else {
+      move = ev => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => seekTo(at(ev))); };
+    }
+    move(e);
+    const up = () => {
+      track.removeEventListener('pointermove', move); track.removeEventListener('pointerup', up); track.removeEventListener('pointercancel', up);
+      $('tl-knob').classList.remove('active');
+      if (adj) { keepInView(); setShareClip(null); }
+    };
+    track.addEventListener('pointermove', move); track.addEventListener('pointerup', up); track.addEventListener('pointercancel', up);
+  });
+
+  // Zoom del video (independiente del zoom de la línea): botón, pellizco y arrastre para mover.
+  let vz = { s: 1, x: 0, y: 0 };
+  function applyZoom() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    const mx = (vz.s - 1) * w / 2, my = (vz.s - 1) * h / 2;
+    vz.x = Math.max(-mx, Math.min(mx, vz.x)); vz.y = Math.max(-my, Math.min(my, vz.y));
+    video.style.transform = vz.s > 1 ? `translate(${vz.x}px, ${vz.y}px) scale(${vz.s})` : '';
+    stage.classList.toggle('zoomed', vz.s > 1);
+    $('video-zoom').setAttribute('aria-pressed', String(vz.s > 1));
+    $('video-zoom').setAttribute('aria-label', vz.s > 1 ? 'Alejar la imagen' : 'Acercar la imagen');
+    setIcon('video-zoom', vz.s > 1 ? 'zoomout' : 'zoom');
+  }
+  function setVideoZoom(s) { vz = { s: Math.max(1, Math.min(4, s)), x: s > 1 ? vz.x : 0, y: s > 1 ? vz.y : 0 }; applyZoom(); }
+  $('video-zoom').addEventListener('click', () => setVideoZoom(vz.s > 1 ? 1 : 2));
+  const pts = new Map();
+  let pinch = null, panMoved = false;
+  stage.addEventListener('pointerdown', e => {
+    if (e.target.closest('button, input, select')) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    panMoved = false;
+    if (pts.size === 2) { const [p, q] = [...pts.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), s: vz.s }; }
+  });
+  stage.addEventListener('pointermove', e => {
+    const prev = pts.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    pts.set(e.pointerId, cur);
+    if (pinch && pts.size === 2) {
+      const [p, q] = [...pts.values()];
+      vz.s = Math.max(1, Math.min(4, pinch.s * Math.hypot(p.x - q.x, p.y - q.y) / (pinch.d || 1)));
+      panMoved = true; applyZoom();
+    } else if (vz.s > 1 && pts.size === 1) {
+      const dx = cur.x - prev.x, dy = cur.y - prev.y;
+      if (Math.abs(dx) + Math.abs(dy) > 0) { vz.x += dx; vz.y += dy; applyZoom(); }
+      if (Math.hypot(dx, dy) > 2) panMoved = true;
+    }
+  });
+  const endPt = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; };
+  stage.addEventListener('pointerup', endPt); stage.addEventListener('pointercancel', endPt);
+  // Un arrastre o pellizco no debe pausar ni reproducir el video.
+  stage.addEventListener('click', e => { if (panMoved) { panMoved = false; e.stopPropagation(); e.preventDefault(); } }, { capture: true });
+  addEventListener('resize', () => { applyZoom(); if (duration) renderRuler(); });
+  document.addEventListener('fullscreenchange', applyZoom);
+
+  // Nombre del archivo: editable, detrás de un control discreto.
+  $('name-toggle').addEventListener('click', () => {
+    const open = $('name-group').classList.toggle('open');
+    $('name-toggle').setAttribute('aria-expanded', String(open));
+    if (open) $('export-name').focus();
+  });
+
   /* ---------------- Formato, alcance y botón de descarga ---------------- */
   const mode = () => ({
     mp4: document.querySelector('input[name=format]:checked').value === 'mp4',
@@ -596,6 +832,7 @@
     $('export-ext').textContent = m.mp4 ? '.mp4' : '.ts';
     if (!busy) setDownloadLabel(`Descargar ${m.full ? 'partido completo' : 'recorte'} ${m.mp4 ? 'MP4' : '.ts'}`);
     updateShareUI();
+    syncClipState();
   }
   for (const input of document.querySelectorAll('input[name=format], input[name=scope]')) input.addEventListener('change', () => syncMode());
   $('export-mode').addEventListener('change', () => syncMode(true));
@@ -876,7 +1113,7 @@
     const m = mode();
     const show = m.mp4 && !m.full;
     $('bardo-wrap').classList.toggle('hidden', !show);
-    if (!busy) { $('bardo-go').disabled = !SHARE_SUPPORTED; setDownloadLabel('Bardealo por WhatsApp 😈', '', 'bardo-go'); }
+    if (!busy) { $('bardo-go').disabled = !SHARE_SUPPORTED || !hasClip; setDownloadLabel('Bardealo por WhatsApp 😈', '', 'bardo-go'); }
     $('bardo-hint').textContent = SHARE_SUPPORTED ? '' : 'Este navegador no permite compartir archivos. Usá «Descargar recorte MP4» y adjuntalo en WhatsApp.';
   }
   const mbShort = bytes => (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB';

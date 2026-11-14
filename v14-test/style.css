@@ -668,3 +668,61 @@ body.has-match .home-demo{display:none}
  .mode-chip{height:48px;padding:0 12px 0 16px;border-radius:24px}
  .name-toggle{margin-bottom:8px}
 }
+
+/* ══ Home en escritorio intermedio (1100–1599 px CSS, p. ej. 1920×1080 al 150 % = 1280 px) ══
+   El buscador no entra en una sola fila con el logo: pasa a una fila propia de ancho completo.
+   El encabezado y el buscador se vuelven «display:contents» para ubicar logo, buscador, título y
+   demostración en una grilla, sin posiciones absolutas ni escalar la página. */
+@media (min-width:1100px) and (max-width:1599px){
+ body:not(.has-match) .app{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:32px;align-content:start;
+  grid-template-areas:"logo right" "picker picker" "status status" "intro intro" "demo demo" "foot foot";min-height:0}
+ body:not(.has-match) .topbar,body:not(.has-match) .finder{display:contents}
+ body:not(.has-match) .wordmark{grid-area:logo;height:64px;align-self:center;align-items:center}
+ body:not(.has-match) .wordmark span{display:inline}
+ body:not(.has-match) .topbar-right{grid-area:right;align-self:center}
+ body:not(.has-match) .conn #connection{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+ body:not(.has-match) .picker{grid-area:picker;max-width:none}
+ body:not(.has-match) .pk{padding:0 16px;gap:10px}
+ body:not(.has-match) .pk-country{width:150px}
+ body:not(.has-match) .pk-club{min-width:224px}
+ body:not(.has-match) .pk-date{width:228px}
+ body:not(.has-match) .pk-court,body:not(.has-match) .pk-time{width:216px}
+ body:not(.has-match) .finder-status{grid-area:status;position:static;transform:none;max-width:none;margin:10px 0 0;white-space:normal;justify-content:center}
+ body:not(.has-match) .finder-intro{grid-area:intro;position:static;transform:none;max-width:none;margin:44px 0 0}
+ body:not(.has-match) .finder-intro h1{font-size:clamp(64px,6.6vw,96px)}
+ body:not(.has-match) .finder-intro h1 br{display:none}
+ body:not(.has-match) .finder-intro h1 em{margin-left:.2em}
+ body:not(.has-match) .intro-lead{max-width:640px;font-size:17px!important;margin-top:16px!important}
+ body:not(.has-match) .intro-tags{max-width:none;margin-top:18px}
+ body:not(.has-match) .home-demo{grid-area:demo;width:100%;max-width:1080px;margin:36px 0 0;padding:0;align-self:start;flex:none}
+ body:not(.has-match) .foot{grid-area:foot;position:static}
+}
+/* 1400–1599 px: título a la izquierda y demostración a la derecha, debajo del buscador. */
+@media (min-width:1400px) and (max-width:1599px){
+ body:not(.has-match) .app{grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"logo right" "picker picker" "status status" "intro demo" "foot foot"}
+ body:not(.has-match) .topbar-right{justify-self:end}
+ body:not(.has-match) .finder-intro{align-self:center;margin:40px 0 0}
+ body:not(.has-match) .finder-intro h1{font-size:clamp(84px,6.4vw,100px)}
+ body:not(.has-match) .finder-intro h1 br{display:inline}
+ body:not(.has-match) .finder-intro h1 em{margin-left:0}
+ body:not(.has-match) .intro-lead{max-width:440px}
+ body:not(.has-match) .intro-tags{max-width:440px}
+ body:not(.has-match) .home-demo{margin:40px 0 0;max-width:none}
+}
+
+/* 1100–1219 px: sin los íconos de cada campo, para que los textos entren completos. */
+@media (min-width:1100px) and (max-width:1219px){
+ body:not(.has-match) .pk>.i{display:none}
+ body:not(.has-match) .pk-country{width:124px}
+ body:not(.has-match) .pk-club{min-width:198px}
+ body:not(.has-match) .pk-date{width:202px}
+ body:not(.has-match) .pk-court,body:not(.has-match) .pk-time{width:190px}
+}
+/* Desde 1600 px el buscador va en la misma fila que el logo: anchos medidos para que ningún texto se corte. */
+@media (min-width:1600px){
+ .picker{max-width:1160px}
+ .pk-country{width:150px}
+ .pk-club{min-width:224px}
+ .pk-date{width:228px}
+ .pk-court,.pk-time{width:216px}
+}
